@@ -65,3 +65,8 @@ The project now supports an optional imported M4-style GLB at `res://assets/mode
 Bundled rifle and concrete-footstep audio can now be placed at `res://assets/audio/rifle_shot.ogg` and `res://assets/audio/footsteps_concrete.ogg` (WAV and MP3 are also accepted). Local audio is preferred; the existing CC0 download-and-cache behavior remains the fallback.
 
 See [assets/ASSET_IMPORT_GUIDE.md](assets/ASSET_IMPORT_GUIDE.md) for exact paths, scale/orientation requirements, suggested free asset sources, license-recording guidance, and Quest optimization notes. House, vehicle, and hand models are still procedural; their imported overrides are not wired yet. No third-party model files are bundled by this code update, and the imported-model path still needs a headset test.
+
+
+## Optional imported visual models
+
+The project now has optional GLB visual overrides for the M4 carbine, both tracked hands, suburban houses, and parked sedans. Add the files listed in `assets/ASSET_IMPORT_GUIDE.md` to activate them. House and vehicle overrides hide only the procedural render meshes; the existing static collision bodies and shapes remain in place. Missing or invalid optional files fall back to the procedural visuals. No third-party model files are bundled in this repository yet, so the default checkout remains self-contained.
