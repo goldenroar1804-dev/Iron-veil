@@ -42,8 +42,6 @@ jobs:
           python tools/build_weapon_model.py
           test "$(head -c 4 assets/models/weapons/m4_carbine.glb)" = "glTF"
           test "$(stat -c%s assets/models/weapons/m4_carbine.glb)" -gt 10000
-          test "$(head -c 4 assets/models/environment/suburban_house_cqb.glb)" = "glTF"
-          test "$(stat -c%s assets/models/environment/suburban_house_cqb.glb)" -gt 10000
           for file in assets/models/hands/*.glb; do
             test "$(head -c 4 "$file")" = "glTF"
             test "$(stat -c%s "$file")" -gt 5000
@@ -55,7 +53,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/environment/suburban_house.glb assets/models/environment/suburban_house_cqb.glb assets/models/environment/sedan.glb assets/models/weapons/m4_carbine.glb assets/models/hands/left_hand.glb assets/models/hands/right_hand.glb
+          git add assets/models/environment/suburban_house.glb assets/models/environment/sedan.glb assets/models/weapons/m4_carbine.glb assets/models/hands/left_hand.glb assets/models/hands/right_hand.glb
           if ! git diff --cached --quiet; then
             git commit -m "Add detailed house, sedan, and M4 3D assets"
             git pull --rebase origin main
