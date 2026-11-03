@@ -81,32 +81,37 @@ func _update_smooth_turn(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_hands() -> void:
-    # The support hand follows the left controller. The firing hand is modeled
-    # around the rifle grip so it remains visually wrapped around the weapon.
-    _make_gloved_hand(left_controller, Vector3(0.0, -0.035, -0.10), false)
+    _make_support_hand(left_controller)
 
-func _make_gloved_hand(parent: Node3D, hand_offset: Vector3, is_gripping: bool) -> void:
+func _make_support_hand(parent: Node3D) -> void:
     var hand := Node3D.new()
-    hand.name = "GlovedHand"
-    hand.position = hand_offset
+    hand.name = "SupportGlovedHand"
+    hand.position = Vector3(0.0, -0.035, -0.10)
     parent.add_child(hand)
-    var glove := Color(0.10, 0.12, 0.11)
-    var cuff := Color(0.20, 0.22, 0.19)
-    # Palm lies across the controller; fingers extend forward along local -Z.
-    _add_hand_piece(hand, "Palm", Vector3(0.105, 0.045, 0.13), Vector3(0, 0, 0), glove)
-    _add_hand_piece(hand, "WristCuff", Vector3(0.09, 0.06, 0.065), Vector3(0, 0, 0.085), cuff)
-    for i in range(4):
-        var x := (float(i) - 1.5) * 0.026
-        var finger_length := 0.09 if i == 1 or i == 2 else 0.075
-        _add_hand_piece(hand, "Finger_%d" % i, Vector3(0.021, 0.025, finger_length), Vector3(x, -0.002, -0.095), glove)
-    var thumb := _add_hand_piece(hand, "Thumb", Vector3(0.028, 0.03, 0.085), Vector3(0.068, -0.005, -0.005), glove)
-    thumb.rotation_degrees.y = -38.0
+    _build_gripping_glove(hand, false)
 
-func _add_hand_piece(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
+func _build_gripping_glove(parent: Node3D, around_grip: bool) -> void:
+    var glove := Color(0.075, 0.085, 0.078)
+    var fabric := Color(0.16, 0.18, 0.15)
+    # Rounded palm and cuff; fingers are curved capsule segments, not blocks.
+    _add_hand_capsule(parent, "Palm", 0.052, 0.105, Vector3(0, 0, 0), glove)
+    _add_hand_capsule(parent, "Wrist", 0.044, 0.07, Vector3(0, 0, 0.09), fabric)
+    for i in range(4):
+        var x := (float(i) - 1.5) * 0.024
+        _add_hand_capsule(parent, "FingerBase_%d" % i, 0.012, 0.060, Vector3(x, -0.018, -0.060), glove)
+        var tip := _add_hand_capsule(parent, "FingerCurl_%d" % i, 0.011, 0.050, Vector3(x * 0.72, -0.045, -0.090), glove)
+        tip.rotation_degrees.x = -48.0
+    var thumb := _add_hand_capsule(parent, "Thumb", 0.014, 0.080, Vector3(0.058, -0.012, -0.025), glove)
+    thumb.rotation_degrees = Vector3(0, 0, -55)
+    if around_grip:
+        parent.rotation_degrees = Vector3(-8, 0, 0)
+
+func _add_hand_capsule(parent: Node3D, label: String, radius: float, length: float, location: Vector3, tint: Color) -> MeshInstance3D:
     var part := MeshInstance3D.new()
     part.name = label
-    var mesh := BoxMesh.new()
-    mesh.size = dimensions
+    var mesh := CapsuleMesh.new()
+    mesh.radius = radius
+    mesh.height = length
     part.mesh = mesh
     part.position = location
     part.material_override = _material(tint)
@@ -115,8 +120,7 @@ func _add_hand_piece(parent: Node3D, label: String, dimensions: Vector3, locatio
 
 func _build_rifle() -> void:
     rifle = Node3D.new()
-    rifle.name = "Detailed_VR_Carbine"
-    # Local forward is -Z. This offset puts the stock near the right shoulder.
+    rifle.name = "M4A1_Carbine"
     rifle.position = Vector3(0.025, -0.11, -0.22)
     rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
     add_child(rifle)
@@ -125,62 +129,86 @@ func _build_rifle() -> void:
     rifle.global_position = xr_camera.global_position + forward.normalized() * 0.85 + Vector3(0, -0.55, 0)
     rifle.global_rotation = xr_camera.global_rotation
 
-    var dark := Color(0.075, 0.085, 0.08)
-    var polymer := Color(0.13, 0.15, 0.13)
-    var metal := Color(0.22, 0.24, 0.22)
-    var glass := Color(0.035, 0.07, 0.055)
+    var black := Color(0.045, 0.052, 0.048)
+    var receiver := Color(0.105, 0.115, 0.105)
+    var polymer := Color(0.15, 0.16, 0.14)
+    var steel := Color(0.23, 0.24, 0.22)
+    var glass := Color(0.025, 0.075, 0.065)
 
-    # Receiver, upper/lower split, handguard, barrel and muzzle.
-    _add_weapon_box(rifle, "UpperReceiver", Vector3(0.105, 0.105, 0.34), Vector3(0, 0, -0.17), metal)
-    _add_weapon_box(rifle, "LowerReceiver", Vector3(0.105, 0.105, 0.25), Vector3(0, -0.095, -0.15), polymer)
-    _add_weapon_box(rifle, "Handguard", Vector3(0.095, 0.105, 0.34), Vector3(0, 0.005, -0.49), polymer)
-    _add_weapon_cylinder(rifle, "Barrel", 0.018, 0.54, Vector3(0, 0.012, -0.83), dark)
-    _add_weapon_cylinder(rifle, "MuzzleDevice", 0.026, 0.075, Vector3(0, 0.012, -1.12), metal)
-    _add_weapon_box(rifle, "Stock", Vector3(0.085, 0.12, 0.30), Vector3(0, -0.015, 0.22), polymer)
-    _add_weapon_box(rifle, "ButtPad", Vector3(0.095, 0.14, 0.035), Vector3(0, -0.015, 0.37), dark)
-    _add_weapon_box(rifle, "PistolGrip", Vector3(0.065, 0.17, 0.085), Vector3(0, -0.19, -0.09), dark)
-    _add_weapon_box(rifle, "Magazine", Vector3(0.075, 0.24, 0.105), Vector3(0, -0.22, -0.20), dark)
-    _add_weapon_box(rifle, "MagazineBase", Vector3(0.082, 0.025, 0.11), Vector3(0, -0.35, -0.20), metal)
+    # M4-style silhouette: adjustable stock, buffer tube, split receiver,
+    # curved magazine, quad-rail handguard, front sight and muzzle device.
+    _add_weapon_cylinder(rifle, "BufferTube", 0.027, 0.23, Vector3(0, 0.0, 0.19), steel)
+    _add_weapon_box(rifle, "AdjustableStock", Vector3(0.105, 0.14, 0.26), Vector3(0, -0.005, 0.31), polymer)
+    _add_weapon_box(rifle, "RubberButtPad", Vector3(0.11, 0.15, 0.025), Vector3(0, -0.005, 0.445), black)
+    _add_weapon_box(rifle, "LowerReceiver", Vector3(0.105, 0.13, 0.24), Vector3(0, -0.075, -0.13), receiver)
+    _add_weapon_box(rifle, "UpperReceiver", Vector3(0.105, 0.095, 0.34), Vector3(0, 0.015, -0.20), steel)
+    _add_weapon_box(rifle, "EjectionPort", Vector3(0.008, 0.042, 0.105), Vector3(0.056, -0.005, -0.19), black)
+    _add_weapon_box(rifle, "ForwardAssist", Vector3(0.025, 0.035, 0.035), Vector3(0.06, 0.035, -0.31), black)
+    _add_weapon_box(rifle, "QuadRailHandguard", Vector3(0.115, 0.12, 0.37), Vector3(0, 0.01, -0.53), polymer)
+    _add_weapon_cylinder(rifle, "OuterBarrel", 0.018, 0.58, Vector3(0, 0.01, -0.99), black)
+    _add_weapon_cylinder(rifle, "FrontBarrelCollar", 0.027, 0.045, Vector3(0, 0.01, -0.78), steel)
+    _add_weapon_cylinder(rifle, "A2BirdcageFlashHider", 0.026, 0.075, Vector3(0, 0.01, -1.30), steel)
+    _add_weapon_box(rifle, "TopPicatinnyRail", Vector3(0.045, 0.025, 0.76), Vector3(0, 0.08, -0.50), black)
+    _add_weapon_box(rifle, "CarryHandleOpticMount", Vector3(0.09, 0.06, 0.13), Vector3(0, 0.13, -0.28), black)
+    _add_weapon_box(rifle, "RedDotOptic", Vector3(0.075, 0.085, 0.12), Vector3(0, 0.19, -0.29), black)
+    _add_weapon_box(rifle, "OpticLens", Vector3(0.065, 0.062, 0.006), Vector3(0, 0.19, -0.354), glass)
+    _add_weapon_box(rifle, "FrontSightPost", Vector3(0.022, 0.075, 0.025), Vector3(0, 0.13, -0.69), steel)
+    _add_weapon_box(rifle, "FrontSightWings", Vector3(0.10, 0.018, 0.025), Vector3(0, 0.12, -0.69), steel)
+    _add_weapon_box(rifle, "PistolGrip", Vector3(0.065, 0.18, 0.09), Vector3(0, -0.19, -0.09), black)
+    _add_weapon_box(rifle, "TriggerGuard", Vector3(0.075, 0.018, 0.095), Vector3(0, -0.155, -0.11), steel)
+    _add_weapon_box(rifle, "Trigger", Vector3(0.012, 0.045, 0.018), Vector3(0, -0.15, -0.12), steel)
+    _add_weapon_box(rifle, "MagazineWell", Vector3(0.09, 0.07, 0.11), Vector3(0, -0.15, -0.19), black)
+    _add_weapon_box(rifle, "STANAGMagazine", Vector3(0.075, 0.25, 0.105), Vector3(0, -0.29, -0.20), black)
+    _add_weapon_box(rifle, "MagazineFloorplate", Vector3(0.08, 0.025, 0.11), Vector3(0, -0.425, -0.20), steel)
+    # Rail slots and fasteners add detail without high-cost geometry.
+    for i in range(8):
+        var z := -0.39 - float(i) * 0.039
+        _add_weapon_box(rifle, "RailSlot_%d" % i, Vector3(0.122, 0.012, 0.012), Vector3(0, 0.075, z), black)
+    for side in [-1.0, 1.0]:
+        _add_weapon_box(rifle, "SideRail_%s" % side, Vector3(0.018, 0.045, 0.27), Vector3(side * 0.064, 0.01, -0.53), black)
+        _add_weapon_box(rifle, "HandStop_%s" % side, Vector3(0.035, 0.06, 0.045), Vector3(side * 0.073, -0.01, -0.64), steel)
 
-    # Top rail, optic, backup sights and side accessory.
-    _add_weapon_box(rifle, "TopRail", Vector3(0.045, 0.025, 0.62), Vector3(0, 0.075, -0.40), dark)
-    _add_weapon_box(rifle, "OpticBody", Vector3(0.085, 0.085, 0.14), Vector3(0, 0.15, -0.27), dark)
-    _add_weapon_box(rifle, "OpticLens", Vector3(0.07, 0.065, 0.008), Vector3(0, 0.15, -0.345), glass)
-    _add_weapon_box(rifle, "FrontSight", Vector3(0.025, 0.075, 0.035), Vector3(0, 0.13, -0.68), metal)
-    _add_weapon_box(rifle, "SideRail", Vector3(0.025, 0.035, 0.25), Vector3(0.058, 0.0, -0.52), dark)
-    _add_weapon_box(rifle, "Flashlight", Vector3(0.045, 0.055, 0.13), Vector3(0.09, -0.015, -0.60), metal)
-    _add_weapon_box(rifle, "TriggerGuard", Vector3(0.075, 0.018, 0.09), Vector3(0, -0.16, -0.09), metal)
-
-    # The right glove is attached to the rifle grip; the left glove tracks its controller.
+    # Right hand sits around the pistol grip: palm behind it, fingers curl across it.
     var right_hand := Node3D.new()
-    right_hand.name = "RightGripHand"
-    right_hand.position = Vector3(0.0, -0.19, -0.055)
+    right_hand.name = "RightHand_WrappedAroundPistolGrip"
+    right_hand.position = Vector3(0.075, -0.19, -0.085)
+    right_hand.rotation_degrees = Vector3(0, 0, -10)
     rifle.add_child(right_hand)
-    _make_gloved_hand(right_hand, Vector3.ZERO, true)
-    # The tracked left glove is the support hand; no duplicate static hand is drawn.
+    _build_gripping_glove(right_hand, true)
 
-    muzzle_flash = MeshInstance3D.new()
-    muzzle_flash.name = "MuzzleFlash_PNG_Sprite"
-    var flash_mesh := QuadMesh.new()
-    flash_mesh.size = Vector2(0.34, 0.16)
-    muzzle_flash.mesh = flash_mesh
-    muzzle_flash.position = Vector3(0, 0.012, -1.24)
-    var flash_material := StandardMaterial3D.new()
-    flash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-    flash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    flash_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
-    flash_material.albedo_texture = _create_muzzle_flash_png()
-    flash_material.emission_enabled = true
-    flash_material.emission = Color(1.0, 0.48, 0.08)
-    flash_material.emission_energy_multiplier = 2.0
-    muzzle_flash.material_override = flash_material
-    muzzle_flash.visible = false
-    rifle.add_child(muzzle_flash)
+    # Three offset, crossed transparent flame cards create a broad layered burst
+    # directly at the muzzle rather than a thin line.
+    var flash_textures: Array[Texture2D] = [
+        _create_muzzle_flash_png(Color(1.0, 0.58, 0.10), 1.0),
+        _create_muzzle_flash_png(Color(1.0, 0.24, 0.025), 0.78),
+        _create_muzzle_flash_png(Color(1.0, 0.88, 0.48), 0.48)
+    ]
+    for i in range(3):
+        var card := MeshInstance3D.new()
+        card.name = "MuzzleFlash_Layer_%d" % i
+        var quad := QuadMesh.new()
+        quad.size = Vector2(0.34 + float(i) * 0.15, 0.20 + float(i) * 0.07)
+        card.mesh = quad
+        card.position = Vector3(0, 0.01, -1.36 - float(i) * 0.012)
+        card.rotation_degrees.y = float(i) * 27.0
+        var mat := StandardMaterial3D.new()
+        mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+        mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+        mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+        mat.albedo_texture = flash_textures[i]
+        mat.emission_enabled = true
+        mat.emission = Color(1.0, 0.42, 0.08)
+        mat.emission_energy_multiplier = 2.5
+        card.material_override = mat
+        card.visible = false
+        rifle.add_child(card)
+        if i == 0:
+            muzzle_flash = card
     muzzle_light = OmniLight3D.new()
-    muzzle_light.light_color = Color(1.0, 0.55, 0.18)
+    muzzle_light.light_color = Color(1.0, 0.48, 0.12)
     muzzle_light.light_energy = 0.0
-    muzzle_light.omni_range = 4.0
-    muzzle_light.position = muzzle_flash.position
+    muzzle_light.omni_range = 4.5
+    muzzle_light.position = Vector3(0, 0.01, -1.38)
     rifle.add_child(muzzle_light)
 
 func _add_weapon_box(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> void:
@@ -200,6 +228,7 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
     mesh.top_radius = radius
     mesh.bottom_radius = radius
     mesh.height = length
+    mesh.radial_segments = 16
     part.mesh = mesh
     part.position = location
     part.rotation_degrees.x = 90.0
@@ -208,17 +237,16 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
 
 func _update_weapon_grab() -> void:
     var right_grip := right_controller.is_button_pressed("grip")
-    var any_grip := right_grip
-    if not rifle_held and any_grip and right_controller.global_position.distance_to(rifle.global_position) < 1.0:
-        rifle.reparent(right_controller, true)
+    if not rifle_held and right_grip:
+        rifle.reparent(right_controller, false)
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
         rifle_held = true
-        print("IRON VEIL: rifle picked up")
+        print("IRON VEIL: M4 grip acquired")
     elif rifle_held and grip_was_pressed and not right_grip:
         rifle.reparent(self, true)
         rifle_held = false
-        print("IRON VEIL: rifle dropped")
+        print("IRON VEIL: M4 released")
     grip_was_pressed = right_grip
 
 func _update_firing() -> void:
@@ -231,16 +259,20 @@ func _update_firing() -> void:
 func _fire_rifle() -> void:
     if rifle == null or not rifle_held:
         return
-    muzzle_flash.visible = true
-    muzzle_light.light_energy = 3.5
-    get_tree().create_timer(0.06).timeout.connect(func():
-        if is_instance_valid(muzzle_flash):
-            muzzle_flash.visible = false
+    for child in rifle.get_children():
+        if child.name.begins_with("MuzzleFlash_Layer_"):
+            child.visible = true
+    muzzle_light.light_energy = 4.0
+    get_tree().create_timer(0.075).timeout.connect(func():
+        if is_instance_valid(rifle):
+            for child in rifle.get_children():
+                if child.name.begins_with("MuzzleFlash_Layer_"):
+                    child.visible = false
             muzzle_light.light_energy = 0.0
     )
     gun_audio.global_position = rifle.global_position
     gun_audio.play()
-    var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.18)
+    var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.40)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
     query.collide_with_areas = true
@@ -249,22 +281,21 @@ func _fire_rifle() -> void:
         _spawn_bullet_impact(hit.position, hit.normal)
         print("IRON VEIL: hit ", hit.collider.name)
 
-func _create_muzzle_flash_png() -> Texture2D:
-    # Generate a transparent flame-shaped PNG locally so the effect is a sprite,
-    # not a glowing sphere. It is written into the app's user data folder.
-    var image := Image.create(128, 64, false, Image.FORMAT_RGBA8)
-    for y in range(64):
+func _create_muzzle_flash_png(tint: Color, brightness: float) -> Texture2D:
+    var image := Image.create(128, 96, false, Image.FORMAT_RGBA8)
+    for y in range(96):
         for x in range(128):
             var nx := float(x) / 127.0
-            var ny := absf((float(y) - 31.5) / 31.5)
-            var core_width := 0.10 + 0.70 * pow(1.0 - nx, 0.62)
-            var edge := ny / core_width
-            var alpha := clampf((1.0 - edge) * 1.7, 0.0, 1.0) * clampf((1.0 - nx) * 1.6, 0.0, 1.0)
-            var color := Color(1.0, 0.26 + 0.55 * (1.0 - nx), 0.035, alpha)
-            if edge < 0.35:
-                color = Color(1.0, 0.92, 0.55, alpha)
+            var ny := absf((float(y) - 47.5) / 47.5)
+            var flicker := 0.72 + 0.28 * sin(float(x) * 0.31 + float(y) * 0.17)
+            var envelope := pow(maxf(0.0, 1.0 - nx), 0.58)
+            var width := 0.10 + 0.86 * envelope
+            var edge := ny / width
+            var alpha := clampf((1.0 - edge) * 1.65, 0.0, 1.0) * clampf((1.0 - nx) * 1.55, 0.0, 1.0) * flicker * brightness
+            var color := Color(tint.r, tint.g * (0.72 + 0.28 * (1.0 - nx)), tint.b, alpha)
+            if edge < 0.25:
+                color = Color(1.0, 0.92, 0.64, alpha)
             image.set_pixel(x, y, color)
-    image.save_png("user://iron_veil_muzzle_flash.png")
     return ImageTexture.create_from_image(image)
 
 func _build_audio() -> void:
