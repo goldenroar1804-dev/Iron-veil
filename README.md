@@ -6,10 +6,10 @@ Native Meta Quest tactical PvE prototype built with Godot 4 and OpenXR.
 - OpenXR head and controller tracking
 - Smooth thumbstick locomotion and turning
 - Grip-button rifle pickup/drop and trigger firing
-- Low-poly carbine, controller gloves, and CQB silhouette targets
+- Detailed procedural M4-style carbine, rounded VR grip glove, and CQB silhouette targets
 - Procedural suburban street block with house shells and vehicle props
 - Procedural sky, ambient lighting, fog, and subtle surface variation
-- Transparent muzzle-flash PNG generated and cached at runtime
+- Three layered transparent muzzle-flash sprite cards generated at runtime
 - CC0 rifle-shot and concrete-footstep MP3 effects downloaded and cached on first launch
 
 ## Free asset sources
@@ -30,3 +30,7 @@ The first goal is to verify the scene launches correctly in the headset. APK exp
 ## Important testing note
 This is an early prototype. The latest visual and audio changes have not been tested on a physical Quest headset by the developer. Internet access is required for the first audio download. If the downloads fail, the project will log a warning and the corresponding sound will be silent until the download succeeds.
 
+
+
+## Latest weapon visual pass
+The M4-style carbine is assembled from detailed lightweight meshes, including an adjustable stock, buffer tube, split receiver, ejection-port detail, quad-rail handguard, barrel, birdcage flash hider, optic, magazine, and trigger guard. The right glove uses rounded palm/finger segments positioned around the pistol grip. The muzzle effect uses three overlapping transparent flame sprites and a short light pulse. These are procedural meshes and generated sprites, not imported photogrammetry or commercial asset models.
