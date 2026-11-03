@@ -1,8 +1,11 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added optional imported M4 GLB support with procedural fallback, bundled rifle/footstep audio priority with existing CC0 download fallback, and an asset import/licensing/performance guide.
-Code commit: be690638c7dbee7a23f18ee4096bd434824e4649
-Asset guide commit: fa3a61780f4d42d10d65cae9945f40c4454126bf
-Documentation commit: 158d71f7c40dc57c73f90885e4f183928ff13e31
+Latest update: Added optional imported GLB visual overrides for left/right tracked hands, suburban houses, and parked sedans. Environment replacements hide only procedural render meshes while retaining all original StaticBody3D and CollisionShape3D colliders. Updated the asset import guide with target dimensions, orientation, fallback behavior, and import checks. Existing M4 GLB and local-audio support remain available.
+
+Code commit: 3b8b2bf71f1f336cf2ad6d86a7c61a26d41c8c32
+Asset guide commit: 4f15d62f83f69c66f24aa251eb490e5663910f34
+Documentation commit: 1c1f634f192bd5f19c15678c3453238bd3671376
+
+No third-party model files have been bundled. Godot editor import, static parsing, and physical Quest 3 testing have not been run in this environment. Imported GLB assets still need scale/orientation validation in the headset.
 
 This file is updated whenever the assistant makes a repository change.
