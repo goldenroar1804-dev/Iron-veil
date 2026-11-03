@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Corrected inverted forward/backward movement input.
-Commit: 840548f60db2b2ce87944bb530d97e8e205d0c45
+Latest update: Added a basic VR rifle model, right-trigger firing, target hitbox, and visible bullet impacts.
+Commit: 6b70ed5e3f4243381cad6ec962d153640672e856
 
 This file is updated whenever the assistant makes a repository change.
