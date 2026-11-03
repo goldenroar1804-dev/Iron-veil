@@ -24,7 +24,19 @@ def add(mesh, name, mat):
     scene.add_geometry(mesh, geom_name=name, node_name=name)
 
 def box(name, size, pos, mat):
-    mesh = trimesh.creation.box(extents=size)
+    # Beveled convex hulls remove the sharp, toy-like cube silhouette from
+    # receivers, stock, optic housing, magazine, and accessory housings.
+    size = __import__("numpy").array(size, dtype=float)
+    radius = max(0.0015, float(size.min()) * 0.16)
+    core = __import__("numpy").maximum(size - radius * 2.0, radius * 0.35)
+    corner_clouds = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                sphere = trimesh.creation.icosphere(subdivisions=2, radius=radius)
+                sphere.apply_translation((sx * core[0] * 0.5, sy * core[1] * 0.5, sz * core[2] * 0.5))
+                corner_clouds.append(sphere)
+    mesh = trimesh.util.concatenate(corner_clouds).convex_hull
     mesh.apply_translation(pos)
     add(mesh, name, mat)
 
@@ -57,8 +69,11 @@ cylinder("Front optic lens",.039,.006,(0,.21,-.365),(0,0,1),glass)
 cylinder("Rear optic lens",.039,.006,(0,.21,-.215),(0,0,1),glass)
 box("Pistol grip",(.075,.19,.10),(0,-.19,-.09),rubber)
 box("Magazine upper",(.078,.14,.11),(0,-.25,-.20),steel)
-box("Magazine body",(.075,.20,.10),(0,-.40,-.20),polymer)
-box("Magazine floor plate",(.085,.025,.115),(0,-.515,-.20),steel)
+box("Magazine upper",(.078,.11,.11),(0,-.255,-.20),steel)
+box("Magazine body upper",(.074,.12,.098),(0,-.355,-.195),polymer)
+box("Magazine body mid",(.071,.12,.094),(0,-.455,-.18),polymer)
+box("Magazine body lower",(.068,.09,.09),(0,-.55,-.16),polymer)
+box("Magazine floor plate",(.085,.025,.115),(0,-.605,-.16),steel)
 box("Trigger guard",(.075,.018,.095),(0,-.155,-.11),steel)
 box("Trigger",(.012,.045,.018),(0,-.15,-.12),brass)
 box("Front sight post",(.018,.085,.025),(0,.14,-.70),steel)
