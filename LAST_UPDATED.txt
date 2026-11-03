@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Smooth thumbstick locomotion and turning
-Commit: ff9f5e4e6b8d07571ddd1f0b4c7cd83b256174c1
+Latest update: Corrected inverted forward/backward movement input.
+Commit: 840548f60db2b2ce87944bb530d97e8e205d0c45
 
 This file is updated whenever the assistant makes a repository change.
