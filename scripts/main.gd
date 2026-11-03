@@ -410,7 +410,7 @@ func _update_weapon_reload() -> void:
     left_trigger_was_pressed = left_trigger
 
 func _update_firing() -> void:
-    var pressed := right_controller.is_button_pressed("trigger")
+    var pressed := right_controller.is_button_pressed("trigger") or right_controller.get_float("trigger") > 0.65
     if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0 and rifle_ammo > 0:
         _fire_rifle()
         fire_cooldown = fire_interval
