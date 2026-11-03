@@ -52,9 +52,9 @@ func _process(delta: float) -> void:
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
     _update_hand_pose()
-    var used_for_door := _update_door_interaction()
-    if not used_for_door:
-        _update_weapon_grab()
+    _update_door_interaction()
+    _animate_doors(delta)
+    _update_weapon_grab()
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
@@ -354,10 +354,12 @@ func _update_weapon_grab() -> void:
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
         rifle_held = true
+        right_controller.trigger_haptic_pulse("haptic", 0.85, 0.9, 0.16, 0.0)
         print("IRON VEIL: M4 grip acquired")
     elif rifle_held and grip_was_pressed and not right_grip:
         rifle.reparent(self, true)
         rifle_held = false
+        right_controller.trigger_haptic_pulse("haptic", 0.55, 0.45, 0.10, 0.0)
         print("IRON VEIL: M4 released")
     grip_was_pressed = right_grip
 
@@ -384,6 +386,7 @@ func _fire_rifle() -> void:
     )
     gun_audio.global_position = rifle.global_position
     gun_audio.play()
+    right_controller.trigger_haptic_pulse("haptic", 0.95, 0.8, 0.075, 0.0)
     var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.40)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
@@ -475,8 +478,30 @@ func _try_add_imported_model(parent: Node3D, path: String, instance_name: String
     var model := packed_scene.instantiate()
     model.name = instance_name
     parent.add_child(model)
+    _enhance_imported_materials(model)
     print("IRON VEIL: loaded imported model: ", path)
     return true
+
+func _enhance_imported_materials(root: Node) -> void:
+    # Preserve each asset's authored albedo/normal/metallic textures, while
+    # adding a subtle high-frequency detail layer and Quest-friendly filtering.
+    if root is MeshInstance3D:
+        var mesh_instance := root as MeshInstance3D
+        if mesh_instance.mesh != null:
+            for surface in range(mesh_instance.mesh.get_surface_count()):
+                var source := mesh_instance.get_active_material(surface) as StandardMaterial3D
+                if source == null:
+                    continue
+                var tuned := source.duplicate() as StandardMaterial3D
+                tuned.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+                tuned.roughness = clampf(tuned.roughness, 0.38, 0.94)
+                tuned.detail_enabled = true
+                tuned.detail_albedo = detail_texture
+                tuned.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+                tuned.detail_uv1_scale = Vector3(9.0, 9.0, 1.0)
+                mesh_instance.set_surface_override_material(surface, tuned)
+    for child in root.get_children():
+        _enhance_imported_materials(child)
 
 func _install_environment_model(label: String, center: Vector3, path: String, model_scale: Vector3) -> void:
     if not ResourceLoader.exists(path):
@@ -703,7 +728,7 @@ func _build_interactive_door(label: String, center: Vector3) -> void:
     var panel := MeshInstance3D.new()
     panel.name = "DoorPanel"
     var mesh := BoxMesh.new()
-    mesh.size = Vector3(0.06, 2.12, 1.16)
+    mesh.size = Vector3(1.16, 2.12, 0.06)
     panel.mesh = mesh
     panel.position = Vector3(0.58, 1.06, 0.0)
     panel.material_override = _material(Color(0.25, 0.17, 0.11))
@@ -755,11 +780,13 @@ func _update_door_interaction() -> bool:
         nearest.set_meta("open", opening)
         nearest.set_meta("target_angle", deg_to_rad(-95.0 if opening else 0.0))
         controller.trigger_haptic_pulse("haptic", 0.75, 0.7, 0.13, 0.0)
+    return true
+
+func _animate_doors(delta: float) -> void:
     for door in interactive_doors:
         if is_instance_valid(door):
             var target := float(door.get_meta("target_angle"))
-            door.rotation.y = lerp_angle(door.rotation.y, target, 1.0 - exp(-8.0 * get_process_delta_time()))
-    return true
+            door.rotation.y = lerp_angle(door.rotation.y, target, 1.0 - exp(-8.0 * delta))
 
 
 func _build_parked_car(label: String, center: Vector3, body_color: Color) -> void:
