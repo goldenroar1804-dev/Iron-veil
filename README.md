@@ -37,7 +37,7 @@ The M4-style carbine is assembled from detailed lightweight meshes, including an
 
 
 ## Latest gameplay and collision pass
-The rifle now starts on a pickup stand and only attaches to the right controller after the player reaches it and squeezes the grip button. Both hands are independent of the rifle and follow their respective tracked controllers. Buildings, roads, sidewalks, fences, props, and parked-car bodies have static collision geometry; wheels have separate collision shapes. The map is extended along the street and each of eight houses receives one to three randomized CQB targets inside its room. Hand meshes remain procedural approximations rather than imported scanned human-hand assets; the current repository still does not bundle third-party environment model packs.
+The rifle now starts on a pickup stand and only attaches to the right controller after the player reaches it and squeezes the grip button. Both hands are independent of the rifle and follow their respective tracked controllers. Buildings, roads, sidewalks, fences, props, and parked-car bodies have static collision geometry; wheels have separate collision shapes. Front window panes and trim are kept clear of the central house entrance so they do not obstruct the doorway. The map is extended along the street and each of eight houses receives one to three randomized CQB targets inside its room. Hand meshes remain procedural approximations rather than imported scanned human-hand assets; the current repository still does not bundle third-party environment model packs.
 
 
 ## Collision correction
@@ -45,3 +45,7 @@ Smooth locomotion now checks a standing capsule against physics bodies before mo
 
 ## Visual realism status
 The current environment, weapon, and hands are still procedural prototype geometry. This update does not claim photorealistic models or imported scanned assets. The next art pass needs proper smooth, rigged hand models, a detailed weapon asset, and authored suburban building/vehicle assets with PBR materials; primitive meshes alone cannot deliver the requested realism.
+
+
+## Latest graphics and doorway pass
+Moved the second front window and its trim to the right-side wall section so the front doorway remains an unobstructed opening. The window panes remain static collision objects. This fixes a visible doorway obstruction in the previous layout. The current meshes are still prototype geometry; no claim of photorealistic assets is made. A dedicated asset-import pass is needed for high-quality hands, weapon, architecture, and vehicles.
