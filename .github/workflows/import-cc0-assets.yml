@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/import-cc0-assets.yml"
+      - "tools/build_weapon_model.py"
   workflow_dispatch:
 
 permissions:
