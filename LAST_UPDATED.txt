@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added right-grip rifle pickup/drop, corrected glove finger orientation, muzzle flash, synthesized gunshot and footstep effects, and enterable house shells with doorway openings.
-Commit: 13cd3b17f0528a0c4cdce3835b9e7635c5034ea5
+Latest update: Added right-grip rifle pickup/drop, corrected glove finger orientation and removed duplicate support hand, muzzle flash, synthesized gunshot and footstep effects, and enterable house shells with doorway openings.
+Commit: 1f7db95805cb96857e96b3a27e3b02aa4515898a
 
 This file is updated whenever the assistant makes a repository change.
