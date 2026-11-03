@@ -5,7 +5,11 @@ Native Meta Quest tactical PvE prototype built with Godot 4 and OpenXR.
 ## Current features
 - OpenXR head and controller tracking.
 - Smooth thumbstick locomotion and turning with standing-capsule collision checks.
-- Right-hand grip pickup/drop for the M4 training prop; trigger firing and haptic feedback.
+- Right-hand grip pickup/drop for the M4 training prop; trigger firing, 30-round magazine with reserve ammunition, and haptic feedback.
+- Left-hand grip can support the rifle at its foregrip for two-handed aiming; left trigger performs a quick reload.
+- Grip input is analog-aware, and nearby door interactions take priority over weapon pickup so one grip press does not trigger both actions.
+- First ground-based PvE operation: four AI opponents with guard, investigate, search, engage, retreat, squad alert sharing, and opportunistic cover selection; enemies react to nearby rifle reports and can be eliminated.
+- Operation objective tracking for OPERATION: SUBURBAN BREACH, including remaining-hostile count and completion state.
 - Articulated controller-following glove hands. Grip curls all four fingers and the thumb; trigger curls the index finger.
 - Grip interaction on nearby doors. Doors swing open/closed with animated collision and haptic feedback.
 - Imported two-storey suburban house and sedan GLB assets, with authored CQB collision shells and interior stair/upper-floor geometry.
@@ -34,5 +38,12 @@ The GitHub Actions workflow `.github/workflows/import-cc0-assets.yml` downloads 
 2. Import the folder into Godot 4.6 with OpenXR enabled.
 3. Run the project on the headset.
 
+## Still in development
+- Physical magazine removal/insertion animation and magazine pickup.
+- Charging-handle/bolt manipulation, weapon sway, weighted handling, and polished recoil animation.
+- More mission types: urban/forest patrol, reconnaissance, hostage rescue, convoy security, search/rescue, defense, and night operations.
+- Dedicated PvP mode later; the current design remains ground-based PvE first, with no rank or branch system.
+- More complete squad tactics, navigation around complex interiors, enemy communication/voice lines, and difficulty tuning.
+
 ## Testing status
-Repository changes and the GLB-generation workflow have been checked. Godot editor import, static GDScript parsing, APK export, and physical Quest 3 testing have not been run in this environment. Please verify the imported house's exact cutaway panels, weapon scale/hand alignment, and door collision in-headset; the house cutaway helper only hides front/roof panels when the GLB exposes those panels as separate mesh nodes.
+The changes are committed on a feature branch for review. Godot editor import, static GDScript parsing, APK export, and physical Quest 3 testing have not been run in this environment because the Godot executable is unavailable. Please verify the imported house's exact cutaway panels, weapon scale/hand alignment, door collision, AI navigation, and two-hand aiming in-headset before merging. The AI uses lightweight local steering and physics queries, not a baked navigation mesh; complex house navigation still needs a dedicated pass.
