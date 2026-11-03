@@ -56,6 +56,7 @@ jobs:
           git add assets/models/environment/suburban_house.glb assets/models/environment/sedan.glb assets/models/weapons/m4_carbine.glb assets/models/hands/left_hand.glb assets/models/hands/right_hand.glb
           if ! git diff --cached --quiet; then
             git commit -m "Add detailed house, sedan, and M4 3D assets"
+            git pull --rebase origin main
             git push
           else
             echo "The asset files are already up to date."
