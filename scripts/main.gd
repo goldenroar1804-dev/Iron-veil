@@ -471,6 +471,16 @@ func _build_parked_car(label: String, center: Vector3, body_color: Color) -> voi
             wheel.rotation_degrees.z = 90.0
             wheel.material_override = _material(Color(0.035, 0.04, 0.04))
             add_child(wheel)
+            var wheel_body := StaticBody3D.new()
+            wheel_body.name = label + "_WheelCollider"
+            wheel_body.position = wheel.position
+            var wheel_collision := CollisionShape3D.new()
+            var wheel_shape := CylinderShape3D.new()
+            wheel_shape.radius = 0.31
+            wheel_shape.height = 0.18
+            wheel_collision.shape = wheel_shape
+            wheel_body.add_child(wheel_collision)
+            add_child(wheel_body)
 
 func _add_streetlight(x: float, z: float) -> void:
     _add_box("StreetlightPole", Vector3(0.10, 4.4, 0.10), Vector3(x, 2.2, z), Color(0.16, 0.17, 0.16))
