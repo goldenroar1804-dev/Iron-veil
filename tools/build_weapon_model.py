@@ -73,3 +73,55 @@ for x in (-.058,.058):
 
 scene.export(out)
 print(f"Created {out} ({out.stat().st_size} bytes)")
+
+# Generate matching, smooth tactical-glove hand models for both controllers.
+def ellipsoid(mesh_name, center, scale, mat, hand_scene):
+    mesh = trimesh.creation.icosphere(subdivisions=2, radius=1.0)
+    mesh.apply_scale(scale)
+    mesh.apply_translation(center)
+    mesh.visual = TextureVisuals(material=mat)
+    hand_scene.add_geometry(mesh, geom_name=mesh_name, node_name=mesh_name)
+
+def link(mesh_name, start, end, radius, mat, hand_scene):
+    start, end = __import__("numpy").array(start, dtype=float), __import__("numpy").array(end, dtype=float)
+    delta = end - start
+    mesh = trimesh.creation.cylinder(radius=radius, height=float(__import__("numpy").linalg.norm(delta)), sections=16)
+    mesh.apply_transform(trimesh.geometry.align_vectors([0,0,1], delta))
+    mesh.apply_translation((start + end) * 0.5)
+    mesh.visual = TextureVisuals(material=mat)
+    hand_scene.add_geometry(mesh, geom_name=mesh_name, node_name=mesh_name)
+
+def build_hand(side, filename):
+    hand_scene = trimesh.Scene()
+    glove = material("Dark olive tactical glove", (48, 55, 43), 0.0, 0.92)
+    armor = material("Reinforced knuckle fabric", (72, 76, 60), 0.02, 0.88)
+    rubber = material("Grip rubber", (25, 29, 25), 0.0, 0.98)
+    mirror = float(side)
+    ellipsoid("Glove palm", (0,0,0), (.083,.105,.037), glove, hand_scene)
+    ellipsoid("Padded palm heel", (0,.075,.005), (.068,.060,.041), rubber, hand_scene)
+    # Four fingers: articulated segments and raised knuckle pads.
+    finger_x = [-.052,-.018,.018,.052]
+    finger_len = [.105,.125,.118,.095]
+    for i, x in enumerate(finger_x):
+        x *= mirror
+        top = -.07
+        middle = top - finger_len[i]*.48
+        tip = top - finger_len[i]
+        link(f"Finger {i} proximal", (x,top,0), (x, middle, -.006), .014, glove, hand_scene)
+        link(f"Finger {i} distal", (x,middle,-.006), (x,tip,-.014), .0115, glove, hand_scene)
+        ellipsoid(f"Finger {i} knuckle", (x,top,.024), (.018,.021,.012), armor, hand_scene)
+        ellipsoid(f"Finger {i} joint", (x,middle,-.006), (.012,.014,.012), armor, hand_scene)
+        ellipsoid(f"Finger {i} fingertip", (x,tip,-.014), (.012,.018,.012), glove, hand_scene)
+    # Opposing thumb sweeps outward and down toward a natural grip pose.
+    t0=(mirror*.066,-.025,0); t1=(mirror*.112,-.078,-.006); t2=(mirror*.13,-.13,-.015)
+    link("Thumb base",t0,t1,.019,glove,hand_scene)
+    link("Thumb tip",t1,t2,.014,glove,hand_scene)
+    ellipsoid("Thumb knuckle",t1,(.021,.022,.016),armor,hand_scene)
+    ellipsoid("Thumb tip pad",t2,(.016,.021,.014),glove,hand_scene)
+    # Wrist cuff and stitched reinforcement panels.
+    link("Wrist cuff",(0,.07,0),(0,.19,0),.047,rubber,hand_scene)
+    ellipsoid("Cuff rim",(0,.17,0),(.052,.025,.052),armor,hand_scene)
+    hand_scene.export(filename)
+
+build_hand(-1, "assets/models/hands/left_hand.glb")
+build_hand(1, "assets/models/hands/right_hand.glb")
