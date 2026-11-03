@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added a procedural transparent PNG muzzle-flash sprite, improved sky/ambient lighting/fog and subtle surface texture variation, plus cached CC0 rifle-shot and concrete-footstep audio downloads.
-Commit: a07e5a08a555eab1178ed31791faf3aecd57c2c3
+Latest update: Added procedural transparent PNG muzzle flash, improved sky/ambient lighting/fog and subtle surface texture variation, cached CC0 rifle-shot and concrete-footstep MP3 downloads, and documented free asset sources.
+Commit: c587daaec07565d3a9f7f10244cc6a8c77faa4d6
 
 This file is updated whenever the assistant makes a repository change.
