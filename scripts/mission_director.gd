@@ -14,7 +14,7 @@ func start_operation(enemy_count: int) -> void:
 
 func register_enemy(enemy: Node) -> void:
     if enemy != null and enemy.has_signal("eliminated"):
-        enemy.eliminated.connect(_on_enemy_eliminated)
+        enemy.connect("eliminated", Callable(self, "_on_enemy_eliminated"))
 
 func _on_enemy_eliminated() -> void:
     if complete:
