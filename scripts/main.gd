@@ -131,7 +131,9 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     var hand := Node3D.new()
     hand.name = hand_name
     hand.position = Vector3(0.0, -0.025, -0.075)
-    hand.rotation_degrees.x = 90.0
+    # Controller local -Z is the hand's forward direction. Keep the hand in
+    # controller space instead of rotating the palm so its fingers point down.
+    hand.rotation = Quaternion.IDENTITY
     parent.add_child(hand)
     if is_left:
         left_hand_root = hand
@@ -142,36 +144,41 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     var fabric := Color(0.19, 0.21, 0.17)
     var rubber := Color(0.045, 0.052, 0.047)
     _add_hand_sphere(hand, "Palm", Vector3(0.078, 0.095, 0.032), Vector3(0, 0, 0), glove)
-    _add_hand_sphere(hand, "PaddedBack", Vector3(0.071, 0.078, 0.018), Vector3(0, 0.005, 0.028), fabric)
-    _add_hand_capsule(hand, "WristCuff", 0.039, 0.105, Vector3(0, 0.105, 0), rubber)
+    _add_hand_sphere(hand, "PaddedBack", Vector3(0.071, 0.078, 0.018), Vector3(0, 0.035, 0.006), fabric)
+    var wrist := _add_hand_capsule(hand, "WristCuff", 0.039, 0.105, Vector3(0, 0, 0.105), rubber)
+    wrist.rotation_degrees.x = 90.0
 
     var finger_array: Array[Node3D] = []
     for i in range(4):
         var x := (float(i) - 1.5) * 0.035
         var finger := Node3D.new()
         finger.name = "Finger_%d_Pivot" % i
-        finger.position = Vector3(x, -0.065, 0.0)
+        finger.position = Vector3(x, 0.0, -0.065)
         hand.add_child(finger)
-        _add_hand_capsule(finger, "Proximal", 0.0125, 0.075, Vector3(0, -0.038, 0), glove)
-        _add_hand_sphere(finger, "KnucklePad", Vector3(0.014, 0.014, 0.012), Vector3(0, -0.012, 0.018), fabric)
+        var proximal := _add_hand_capsule(finger, "Proximal", 0.0125, 0.075, Vector3(0, 0, -0.038), glove)
+        proximal.rotation_degrees.x = 90.0
+        _add_hand_sphere(finger, "KnucklePad", Vector3(0.014, 0.014, 0.012), Vector3(0, 0.035, -0.012), fabric)
         var distal := Node3D.new()
         distal.name = "DistalJoint"
-        distal.position = Vector3(0, -0.071, 0)
+        distal.position = Vector3(0, 0, -0.071)
         finger.add_child(distal)
-        _add_hand_capsule(distal, "Distal", 0.0105, 0.060, Vector3(0, -0.029, 0), glove)
+        var distal_mesh := _add_hand_capsule(distal, "Distal", 0.0105, 0.060, Vector3(0, 0, -0.029), glove)
+        distal_mesh.rotation_degrees.x = 90.0
         finger.set_meta("distal_joint", distal)
         finger_array.append(finger)
 
     var thumb := Node3D.new()
     thumb.name = "ThumbPivot"
-    thumb.position = Vector3(0.075 if not is_left else -0.075, -0.015, 0.0)
+    thumb.position = Vector3(0.075 if not is_left else -0.075, 0.0, -0.015)
     hand.add_child(thumb)
-    _add_hand_capsule(thumb, "ThumbBase", 0.015, 0.075, Vector3(0.0, -0.035, 0.0), glove)
+    var thumb_base := _add_hand_capsule(thumb, "ThumbBase", 0.015, 0.075, Vector3(0.0, 0.0, -0.035), glove)
+    thumb_base.rotation_degrees.x = 90.0
     var thumb_tip := Node3D.new()
     thumb_tip.name = "ThumbTipJoint"
-    thumb_tip.position = Vector3(0.0, -0.068, 0.0)
+    thumb_tip.position = Vector3(0.0, 0.0, -0.068)
     thumb.add_child(thumb_tip)
-    _add_hand_capsule(thumb_tip, "ThumbTip", 0.012, 0.045, Vector3(0.0, -0.022, 0.0), glove)
+    var thumb_tip_mesh := _add_hand_capsule(thumb_tip, "ThumbTip", 0.012, 0.045, Vector3(0.0, 0.0, -0.022), glove)
+    thumb_tip_mesh.rotation_degrees.x = 90.0
 
     if is_left:
         left_hand_fingers = finger_array
@@ -191,16 +198,16 @@ func _pose_one_hand(controller: XRController3D, fingers: Array[Node3D], thumb: N
     var trigger := maxf(controller.get_float("trigger"), 1.0 if controller.is_button_pressed("trigger") else 0.0)
     for i in range(fingers.size()):
         var finger := fingers[i]
-        var curl := grip * 1.05
+        var curl := grip * 1.18
         if i == 1:
-            curl = maxf(curl, trigger * 1.05)
+            curl = maxf(curl, trigger * 1.18)
         finger.rotation.x = curl
         var distal := finger.get_meta("distal_joint") as Node3D
         if distal != null:
-            distal.rotation.x = curl * 0.72
+            distal.rotation.x = curl * 0.82
     if thumb != null:
-        thumb.rotation.z = -grip * 0.78 * (1.0 if controller == right_controller else -1.0)
-        thumb.rotation.x = grip * 0.30
+        thumb.rotation.y = grip * (0.72 if controller == right_controller else -0.72)
+        thumb.rotation.x = grip * 0.48
 
 
 func _add_hand_sphere(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
@@ -498,7 +505,8 @@ func _enhance_imported_materials(root: Node) -> void:
                 tuned.detail_enabled = true
                 tuned.detail_albedo = detail_texture
                 tuned.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
-                tuned.detail_uv1_scale = Vector3(9.0, 9.0, 1.0)
+                tuned.detail_uv1_scale = Vector3(14.0, 14.0, 1.0)
+                tuned.roughness = clampf(tuned.roughness * 0.92, 0.32, 0.96)
                 mesh_instance.set_surface_override_material(surface, tuned)
     for child in root.get_children():
         _enhance_imported_materials(child)
@@ -518,7 +526,11 @@ func _install_environment_model(label: String, center: Vector3, path: String, mo
     # StaticBody3D or CollisionShape3D nodes generated by _add_box().
     for child in get_children():
         if child is MeshInstance3D and child.name.begins_with(label + "_"):
-            child.visible = false
+            # Keep the authored playable interior: floor, stair treads and landing.
+            # Only obsolete exterior prototype meshes are hidden by the imported shell.
+            var keep_interior := child.name.contains("InteriorFloor") or child.name.contains("Stair_") or child.name.contains("UpperLanding")
+            if not keep_interior:
+                child.visible = false
 
 func _load_or_download_sound(cache_path: String, url: String, request_node: HTTPRequest) -> void:
     if FileAccess.file_exists(cache_path):
@@ -611,8 +623,10 @@ func _build_suburban_block() -> void:
     for side in [-1.0, 1.0]:
         for i in range(3):
             var zpos := (-20.0 if side < 0.0 else -28.0) - float(i) * 20.0
-            _build_fence_segment("Fence_%s_%d" % [str(side), i], side * 8.45, zpos)
-            _build_hedge("Hedge_%s_%d" % [str(side), i], Vector3(side * 9.05, 0.45, zpos + 2.7))
+            # Lots occupy roughly |x|=7.5..14.5. Keep landscaping at the
+            # outer property edge so it cannot clip through imported house meshes.
+            _build_fence_segment("Fence_%s_%d" % [str(side), i], side * 16.0, zpos)
+            _build_hedge("Hedge_%s_%d" % [str(side), i], Vector3(side * 17.35, 0.45, zpos + 2.7))
         _add_streetlight(side * 5.0, -12.0)
         _add_streetlight(side * 5.0, -30.0)
 
@@ -733,8 +747,9 @@ func _build_interactive_door(label: String, center: Vector3) -> void:
     panel.position = Vector3(0.58, 1.06, 0.0)
     panel.material_override = _material(Color(0.25, 0.17, 0.11))
     hinge.add_child(panel)
-    var body := StaticBody3D.new()
+    var body := AnimatableBody3D.new()
     body.name = "DoorCollider"
+    body.sync_to_physics = true
     body.position = panel.position
     var collision := CollisionShape3D.new()
     var shape := BoxShape3D.new()
