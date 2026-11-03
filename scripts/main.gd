@@ -86,18 +86,17 @@ func _make_gloved_hand(parent: Node3D, hand_offset: Vector3, is_gripping: bool) 
     hand.name = "GlovedHand"
     hand.position = hand_offset
     parent.add_child(hand)
-    var glove := Color(0.12, 0.14, 0.13)
+    var glove := Color(0.10, 0.12, 0.11)
     var cuff := Color(0.20, 0.22, 0.19)
-    _add_hand_piece(hand, "Palm", Vector3(0.105, 0.12, 0.045), Vector3(0, 0, 0), glove)
-    _add_hand_piece(hand, "WristCuff", Vector3(0.09, 0.065, 0.07), Vector3(0, -0.085, 0.015), cuff)
-    # Four fingers, each made from two rounded-looking glove segments.
+    # Palm lies across the controller; fingers extend forward along local -Z.
+    _add_hand_piece(hand, "Palm", Vector3(0.105, 0.045, 0.13), Vector3(0, 0, 0), glove)
+    _add_hand_piece(hand, "WristCuff", Vector3(0.09, 0.06, 0.065), Vector3(0, 0, 0.085), cuff)
     for i in range(4):
-        var x := (float(i) - 1.5) * 0.025
-        var length := 0.075 if i == 1 or i == 2 else 0.065
-        _add_hand_piece(hand, "Finger_%d_A" % i, Vector3(0.021, length, 0.024), Vector3(x, 0.085, -0.005), glove)
-        _add_hand_piece(hand, "Finger_%d_B" % i, Vector3(0.019, length * 0.72, 0.022), Vector3(x, 0.085 + length * 0.78, -0.005), glove)
-    var thumb := _add_hand_piece(hand, "Thumb", Vector3(0.027, 0.085, 0.027), Vector3(0.067, 0.025, -0.005), glove)
-    thumb.rotation_degrees.z = -38.0
+        var x := (float(i) - 1.5) * 0.026
+        var finger_length := 0.09 if i == 1 or i == 2 else 0.075
+        _add_hand_piece(hand, "Finger_%d" % i, Vector3(0.021, 0.025, finger_length), Vector3(x, -0.002, -0.095), glove)
+    var thumb := _add_hand_piece(hand, "Thumb", Vector3(0.028, 0.03, 0.085), Vector3(0.068, -0.005, -0.005), glove)
+    thumb.rotation_degrees.y = -38.0
 
 func _add_hand_piece(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
     var part := MeshInstance3D.new()
@@ -206,7 +205,7 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
 
 func _update_weapon_grab() -> void:
     var right_grip := right_controller.is_button_pressed("grip")
-    var any_grip := right_grip or left_controller.is_button_pressed("grip")
+    var any_grip := right_grip
     if not rifle_held and any_grip and right_controller.global_position.distance_to(rifle.global_position) < 1.0:
         rifle.reparent(right_controller, true)
         rifle.position = Vector3(0.025, -0.11, -0.22)
