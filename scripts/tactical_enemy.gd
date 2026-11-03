@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## Uses a small state machine and physics queries; no NavigationServer dependency.
 
 enum BrainState { GUARD, INVESTIGATE, SEARCH, ENGAGE, RETREAT, DOWN }
+signal eliminated
 @export var move_speed := 1.15
 @export var health := 3
 @export var guard_radius := 9.0
@@ -54,6 +55,7 @@ func apply_hit(damage: int) -> void:
             body_mesh.position.y = 0.55
         if head_mesh:
             head_mesh.visible = false
+        eliminated.emit()
 
 func _physics_process(delta: float) -> void:
     if state == BrainState.DOWN:
