@@ -18,18 +18,28 @@ extends Node3D
 var rifle: Node3D
 var fire_cooldown := 0.0
 var trigger_was_pressed := false
+var rifle_held := false
+var grip_was_pressed := false
+var footstep_timer := 0.0
+var muzzle_flash: MeshInstance3D
+var muzzle_light: OmniLight3D
+var gun_audio: AudioStreamPlayer3D
+var footstep_audio: AudioStreamPlayer3D
 
 func _ready() -> void:
     _start_openxr()
     _build_suburban_block()
     _build_hands()
     _build_rifle()
+    _build_audio()
 
 func _process(delta: float) -> void:
     if not _xr_is_active():
         return
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
+    _update_weapon_grab()
+    _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
 
@@ -106,7 +116,11 @@ func _build_rifle() -> void:
     # Local forward is -Z. This offset puts the stock near the right shoulder.
     rifle.position = Vector3(0.025, -0.11, -0.22)
     rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
-    right_controller.add_child(rifle)
+    add_child(rifle)
+    var forward := -xr_camera.global_transform.basis.z
+    forward.y = 0.0
+    rifle.global_position = xr_camera.global_position + forward.normalized() * 0.85 + Vector3(0, -0.55, 0)
+    rifle.global_rotation = xr_camera.global_rotation
 
     var dark := Color(0.075, 0.085, 0.08)
     var polymer := Color(0.13, 0.15, 0.13)
@@ -135,7 +149,11 @@ func _build_rifle() -> void:
     _add_weapon_box(rifle, "TriggerGuard", Vector3(0.075, 0.018, 0.09), Vector3(0, -0.16, -0.09), metal)
 
     # The right glove is attached to the rifle grip; the left glove tracks its controller.
-    _make_gloved_hand(rifle, Vector3(0.0, -0.19, -0.055), true)
+    var right_hand := Node3D.new()
+    right_hand.name = "RightGripHand"
+    right_hand.position = Vector3(0.0, -0.19, -0.055)
+    rifle.add_child(right_hand)
+    _make_gloved_hand(right_hand, Vector3.ZERO, true)
     # Support-hand model sits farther forward along the handguard.
     var support_hand := Node3D.new()
     support_hand.name = "SupportHandOnHandguard"
@@ -145,6 +163,23 @@ func _build_rifle() -> void:
     for i in range(4):
         var finger_x := (float(i) - 1.5) * 0.025
         _add_hand_piece(support_hand, "SupportFinger_%d" % i, Vector3(0.02, 0.025, 0.10), Vector3(finger_x, -0.025, -0.105), Color(0.12, 0.14, 0.13))
+
+    muzzle_flash = MeshInstance3D.new()
+    muzzle_flash.name = "MuzzleFlash"
+    var flash_mesh := SphereMesh.new()
+    flash_mesh.radius = 0.075
+    flash_mesh.height = 0.15
+    muzzle_flash.mesh = flash_mesh
+    muzzle_flash.position = Vector3(0, 0.012, -1.22)
+    muzzle_flash.material_override = _material(Color(1.0, 0.58, 0.12))
+    muzzle_flash.visible = false
+    rifle.add_child(muzzle_flash)
+    muzzle_light = OmniLight3D.new()
+    muzzle_light.light_color = Color(1.0, 0.55, 0.18)
+    muzzle_light.light_energy = 0.0
+    muzzle_light.omni_range = 4.0
+    muzzle_light.position = muzzle_flash.position
+    rifle.add_child(muzzle_light)
 
 func _add_weapon_box(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> void:
     var part := MeshInstance3D.new()
@@ -169,16 +204,40 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
     part.material_override = _material(tint)
     parent.add_child(part)
 
+func _update_weapon_grab() -> void:
+    var right_grip := right_controller.is_button_pressed("grip")
+    var any_grip := right_grip or left_controller.is_button_pressed("grip")
+    if not rifle_held and any_grip and right_controller.global_position.distance_to(rifle.global_position) < 1.0:
+        rifle.reparent(right_controller, true)
+        rifle.position = Vector3(0.025, -0.11, -0.22)
+        rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
+        rifle_held = true
+        print("IRON VEIL: rifle picked up")
+    elif rifle_held and grip_was_pressed and not right_grip:
+        rifle.reparent(self, true)
+        rifle_held = false
+        print("IRON VEIL: rifle dropped")
+    grip_was_pressed = right_grip
+
 func _update_firing() -> void:
     var pressed := right_controller.is_button_pressed("trigger")
-    if pressed and not trigger_was_pressed and fire_cooldown <= 0.0:
+    if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0:
         _fire_rifle()
         fire_cooldown = fire_interval
     trigger_was_pressed = pressed
 
 func _fire_rifle() -> void:
-    if rifle == null:
+    if rifle == null or not rifle_held:
         return
+    muzzle_flash.visible = true
+    muzzle_light.light_energy = 3.5
+    get_tree().create_timer(0.06).timeout.connect(func():
+        if is_instance_valid(muzzle_flash):
+            muzzle_flash.visible = false
+            muzzle_light.light_energy = 0.0
+    )
+    gun_audio.global_position = rifle.global_position
+    gun_audio.play()
     var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.18)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
@@ -187,6 +246,47 @@ func _fire_rifle() -> void:
     if not hit.is_empty():
         _spawn_bullet_impact(hit.position, hit.normal)
         print("IRON VEIL: hit ", hit.collider.name)
+
+func _build_audio() -> void:
+    gun_audio = AudioStreamPlayer3D.new()
+    gun_audio.name = "GunshotAudio"
+    gun_audio.stream = _make_audio_stream(true)
+    gun_audio.volume_db = -4.0
+    gun_audio.max_distance = 45.0
+    add_child(gun_audio)
+    footstep_audio = AudioStreamPlayer3D.new()
+    footstep_audio.name = "FootstepAudio"
+    footstep_audio.stream = _make_audio_stream(false)
+    footstep_audio.volume_db = -8.0
+    footstep_audio.max_distance = 12.0
+    add_child(footstep_audio)
+
+func _make_audio_stream(gunshot: bool) -> AudioStreamWAV:
+    var rate := 22050
+    var frames := int(rate * (0.32 if gunshot else 0.15))
+    var pcm := PackedByteArray()
+    pcm.resize(frames * 2)
+    for i in range(frames):
+        var t := float(i) / float(rate)
+        var envelope := exp(-t * (10.0 if gunshot else 25.0))
+        var wave := (randf_range(-1.0, 1.0) * 0.75 + sin(t * TAU * 75.0) * 0.25) * envelope
+        if not gunshot:
+            wave = (sin(t * TAU * 90.0) * 0.7 + randf_range(-1.0, 1.0) * 0.3) * envelope
+        pcm.encode_s16(i * 2, int(clampf(wave, -1.0, 1.0) * 26000.0))
+    var stream := AudioStreamWAV.new()
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = rate
+    stream.stereo = false
+    stream.data = pcm
+    return stream
+
+func _update_footsteps() -> void:
+    var stick: Vector2 = left_controller.get_vector2("primary")
+    footstep_timer = maxf(0.0, footstep_timer - get_process_delta_time())
+    if stick.length() > stick_deadzone and footstep_timer <= 0.0:
+        footstep_audio.global_position = xr_camera.global_position
+        footstep_audio.play()
+        footstep_timer = 0.48
 
 func _spawn_bullet_impact(point: Vector3, normal: Vector3) -> void:
     var impact := MeshInstance3D.new()
@@ -242,10 +342,15 @@ func _build_suburban_block() -> void:
     _build_cqb_target("CQB_Target_04", Vector3(2.0, 0.0, -36.0), Color(0.76, 0.67, 0.43))
 
 func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
-    _add_box(label + "_Main", Vector3(7.0, 3.1, 5.5), center + Vector3(0, 1.55, 0), wall_color)
-    var roof := _add_box(label + "_Roof", Vector3(7.7, 0.35, 6.2), center + Vector3(0, 3.25, 0), Color(0.20, 0.18, 0.16))
-    roof.rotation_degrees.z = 0.0
-    _add_box(label + "_FrontDoor", Vector3(0.9, 2.0, 0.08), center + Vector3(1.7, 1.0, -2.79), Color(0.20, 0.13, 0.09))
+    # Enterable shell with a doorway opening and a walkable interior floor.
+    _add_box(label + "_InteriorFloor", Vector3(6.7, 0.12, 5.2), center + Vector3(0, 0.02, 0), Color(0.34, 0.31, 0.26))
+    _add_box(label + "_BackWall", Vector3(7.0, 3.1, 0.18), center + Vector3(0, 1.55, 2.66), wall_color)
+    _add_box(label + "_LeftWall", Vector3(0.18, 3.1, 5.5), center + Vector3(-3.41, 1.55, 0), wall_color)
+    _add_box(label + "_RightWall", Vector3(0.18, 3.1, 5.5), center + Vector3(3.41, 1.55, 0), wall_color)
+    _add_box(label + "_FrontWallLeft", Vector3(2.8, 3.1, 0.18), center + Vector3(-2.1, 1.55, -2.66), wall_color)
+    _add_box(label + "_FrontWallRight", Vector3(2.8, 3.1, 0.18), center + Vector3(2.1, 1.55, -2.66), wall_color)
+    _add_box(label + "_DoorHeader", Vector3(1.4, 0.65, 0.18), center + Vector3(0, 2.78, -2.66), wall_color)
+    _add_box(label + "_Roof", Vector3(7.7, 0.35, 6.2), center + Vector3(0, 3.25, 0), Color(0.20, 0.18, 0.16))
     _add_box(label + "_WindowA", Vector3(1.25, 1.0, 0.07), center + Vector3(-1.6, 1.9, -2.81), Color(0.12, 0.22, 0.27))
     _add_box(label + "_WindowB", Vector3(1.25, 1.0, 0.07), center + Vector3(0.0, 1.9, -2.81), Color(0.12, 0.22, 0.27))
     _add_box(label + "_WindowTrimA", Vector3(1.38, 0.08, 0.09), center + Vector3(-1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
