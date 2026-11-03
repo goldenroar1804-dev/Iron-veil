@@ -1,10 +1,22 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Bundled detailed suburban house and sedan GLB assets, a detailed M4-style carbine GLB, and mirrored tactical-glove hand GLBs. Replaced blocky fence slabs with individual posts/rails/pickets, rendered hedges as rounded foliage clusters while retaining a broad movement collider, changed streetlight poles/arms to cylindrical geometry, and changed target silhouettes to rounded meshes. Added a reproducible Trimesh asset builder and an Actions workflow that validates and commits the generated models. Environment model replacements remain visual-only; original gameplay colliders are preserved.
 
-Latest code commit: f747570bb16f43b6ddd8f6c6d7a479e6a2201381
-Latest asset commit: bb43ad5a671ea487e2d0ca70c5c67412d89b0043
-Asset builder: tools/build_weapon_model.py
-Asset workflow run: 41734136698 (success)
+Latest implementation:
+- Corrected runtime hand axes: palms stay in controller space and fingers extend along controller forward (-Z); analog/button grip curls the fingers and thumb, while trigger curls the index finger.
+- Rebuilt the M4-style GLB with smoothed/rounded mesh components and PBR material definitions instead of the previous hard-edged block assembly.
+- Kept the imported house and sedan models and enhanced their authored PBR materials with a subtle detail-texture layer.
+- Moved fences and hedges to the outside edge of each lot so they no longer intersect house footprints.
+- Removed prototype/imported house physics nodes before rebuilding the house collision shell; added an upper-floor loft, stair landing, and clear doorway collision gap.
+- Added a house cutaway pass that hides separate front-facade and roof meshes where the imported GLB exposes them, revealing the interior.
+- Door interaction now checks distance to the actual handle, uses an animated collision body, toggles on grip, and provides haptic feedback.
+- Updated README and made asset workflow commits resilient to concurrent main-branch updates.
 
-Godot editor import, static parsing, and physical Quest 3 testing have not been run in this environment. Imported GLB scale/orientation and hand pose still need in-headset validation.
+Key code commits:
+- Hand/house/door/landscaping corrections: 78cc6982613219e415981c60b0738d3d8fc5c275, ef4f310d0873791f49dee66afe351eaa09ea1416, 809efda36701ee3d7722fb5247882cc7a699f9e4
+- Rounded weapon asset generator: 3f6055a0901209b8786bc6f6dc17349fa2702492
+- Asset workflow dependency/push fixes: e4c03c151c77438b6683cc5d18b0b0af3698a3fe, a6767167da60ab9544a99662c02ee953d9414c08
+- Bundled asset commit: faec772bcc3bfe03f9877b066ba1d37ee132ba25
+- README: 54650952bf84664bdf8f16b47d0b23b7f1f9be48
+
+Asset workflow run 41735714838 completed successfully.
+Godot editor import, static GDScript parsing, APK export, and physical Quest 3 testing have not been run. The cutaway pass depends on front-wall/roof meshes being separate nodes in the house GLB; confirm that visual result and controller pose in-headset.
