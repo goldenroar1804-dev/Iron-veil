@@ -511,6 +511,34 @@ func _enhance_imported_materials(root: Node) -> void:
     for child in root.get_children():
         _enhance_imported_materials(child)
 
+func _make_house_cutaway(root: Node3D) -> void:
+    # Keep the authored exterior asset but remove its street-facing wall and
+    # roof panels when they are separate meshes, creating a playable CQB cutaway.
+    # This reveals the built-in floor/stair/upper landing without changing the
+    # model's remaining walls, facade details, or collision layout.
+    var hidden_panels := 0
+    var meshes: Array[MeshInstance3D] = []
+    _collect_mesh_instances(root, meshes)
+    for mesh_instance in meshes:
+        if mesh_instance.mesh == null:
+            continue
+        var bounds := mesh_instance.get_aabb()
+        var center_world := mesh_instance.to_global(bounds.get_center())
+        var center_local := root.to_local(center_world)
+        var size := bounds.size * mesh_instance.global_basis.get_scale().abs()
+        var front_wall := center_local.z < -2.25 and center_local.y > 0.35 and center_local.y < 2.8 and size.x > 1.2 and size.y > 1.0 and size.z < 0.65
+        var roof_panel := center_local.y > 3.0 and size.x > 2.0 and size.z > 2.0 and size.y < 0.65
+        if front_wall or roof_panel:
+            mesh_instance.visible = false
+            hidden_panels += 1
+    print("IRON VEIL: house cutaway panels hidden: ", hidden_panels)
+
+func _collect_mesh_instances(root: Node, output: Array[MeshInstance3D]) -> void:
+    for child in root.get_children():
+        if child is MeshInstance3D:
+            output.append(child as MeshInstance3D)
+        _collect_mesh_instances(child, output)
+
 func _strip_imported_physics(root: Node) -> void:
     for child in root.get_children():
         if child is CollisionObject3D or child is CollisionShape3D:
@@ -530,6 +558,8 @@ func _install_environment_model(label: String, center: Vector3, path: String, mo
     if not _try_add_imported_model(visual_root, path, "ImportedEnvironmentModel"):
         visual_root.queue_free()
         return
+    if label.begins_with("House_"):
+        _make_house_cutaway(visual_root)
     # GLB assets are visual-only. Strip any physics nodes imported with the
     # model so only the hand-authored, correctly placed gameplay colliders remain.
     _strip_imported_physics(visual_root)
