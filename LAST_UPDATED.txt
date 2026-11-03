@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added a basic VR rifle model, right-trigger firing, target hitbox, and visible bullet impacts.
-Commit: 6b70ed5e3f4243381cad6ec962d153640672e856
+Latest update: Added a detailed low-poly VR carbine, visible gloved hands, suburban street environment, parked cars, fences, houses, and four human-silhouette CQB targets.
+Commit: e64409b67460f1da6074e5b6c48c8195218e7b9d
 
 This file is updated whenever the assistant makes a repository change.
