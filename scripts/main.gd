@@ -629,11 +629,27 @@ func _setup_visual_quality() -> void:
     world.environment = environment
     add_child(world)
 
-    # Small seamless noise tile adds subtle surface variation without large textures.
-    var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-    for y in range(64):
-        for x in range(64):
-            var value := randf_range(0.91, 1.0)
+    # Seamless multi-scale material detail: broad mottling plus fine grain.
+    # Kept small so the Quest does not need large texture assets.
+    var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+    var coarse := []
+    var fine := []
+    for y in range(128):
+        var coarse_row := []
+        var fine_row := []
+        for x in range(128):
+            coarse_row.append(randf_range(-0.10, 0.10))
+            fine_row.append(randf_range(-0.035, 0.035))
+        coarse.append(coarse_row)
+        fine.append(fine_row)
+    for y in range(128):
+        for x in range(128):
+            var smooth_value := 0.0
+            for oy in [-1, 0, 1]:
+                for ox in [-1, 0, 1]:
+                    smooth_value += float(coarse[posmod(y + oy, 128)][posmod(x + ox, 128)]) * 0.111
+            var grain := float(fine[y][x])
+            var value := clampf(0.88 + smooth_value * 0.65 + grain, 0.68, 1.0)
             image.set_pixel(x, y, Color(value, value, value, 1.0))
     detail_texture = ImageTexture.create_from_image(image)
 
@@ -641,7 +657,8 @@ func _material(tint: Color) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = tint
     mat.albedo_texture = detail_texture
-    mat.roughness = 0.82
-    mat.metallic = 0.04
+    mat.roughness = 0.9 if tint.r < 0.3 and tint.g < 0.3 else 0.78
+    mat.metallic = 0.12 if tint.r < 0.18 and tint.g < 0.2 else 0.02
     mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    mat.uv1_scale = Vector3(3.5, 3.5, 1.0)
     return mat
