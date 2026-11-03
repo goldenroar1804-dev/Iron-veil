@@ -1,0 +1,46 @@
+name: Godot 4.6 Checks
+
+on:
+  push:
+    branches:
+      - main
+      - feature/pve-ai-vr-interactions
+  pull_request:
+    branches:
+      - main
+      - feature/pve-ai-vr-interactions
+  workflow_dispatch:
+
+jobs:
+  godot-check:
+    name: Import and Script Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Project
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.6
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.6.0
+          use-dotnet: false
+
+      - name: Show Godot Version
+        run: godot --version
+
+      - name: Import Project and Check Scripts
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --editor --path . --quit 2>&1 | tee godot-check.log
+
+      - name: Detect Script and Import Errors
+        if: always()
+        shell: bash
+        run: |
+          if grep -Ei "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" godot-check.log; then
+            echo "Godot reported errors. Check the log above."
+            exit 1
+          fi
+          echo "No matching Godot errors detected."
