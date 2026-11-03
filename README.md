@@ -49,3 +49,7 @@ The current environment, weapon, and hands are still procedural prototype geomet
 
 ## Latest graphics and doorway pass
 Moved the second front window and its trim to the right-side wall section so the front doorway remains an unobstructed opening. The window panes remain static collision objects. This fixes a visible doorway obstruction in the previous layout. The current meshes are still prototype geometry; no claim of photorealistic assets is made. A dedicated asset-import pass is needed for high-quality hands, weapon, architecture, and vehicles.
+
+
+## Grass rendering
+The ground grass is a flat generated color texture with subtle mottled variation tiled across the terrain. No individual grass blades, raised tufts, or grass geometry are generated, keeping the surface flat and Quest-friendly.
