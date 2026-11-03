@@ -92,6 +92,8 @@ def link(mesh_name, start, end, radius, mat, hand_scene):
     hand_scene.add_geometry(mesh, geom_name=mesh_name, node_name=mesh_name)
 
 def build_hand(side, filename):
+    from pathlib import Path
+    Path(filename).parent.mkdir(parents=True, exist_ok=True)
     hand_scene = trimesh.Scene()
     glove = material("Dark olive tactical glove", (48, 55, 43), 0.0, 0.92)
     armor = material("Reinforced knuckle fabric", (72, 76, 60), 0.02, 0.88)
