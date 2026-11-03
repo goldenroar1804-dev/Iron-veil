@@ -1,9 +1,15 @@
 extends Node3D
 
-# IRON VEIL - first native Quest scene.
-# This is a lightweight greybox so we can validate OpenXR before adding systems.
+# IRON VEIL - lightweight native Quest prototype.
+# Left thumbstick: smooth movement. Right thumbstick: smooth turning.
+# Uses Godot's default OpenXR action map ("primary" Vector2 action).
+
+@export var move_speed: float = 2.5
+@export var turn_speed: float = 1.8
+@export var stick_deadzone: float = 0.18
 
 @onready var xr_origin: XROrigin3D = $XROrigin3D
+@onready var xr_camera: XRCamera3D = $XROrigin3D/XRCamera3D
 @onready var left_controller: XRController3D = $XROrigin3D/LeftController
 @onready var right_controller: XRController3D = $XROrigin3D/RightController
 
@@ -11,6 +17,48 @@ func _ready() -> void:
     _start_openxr()
     _build_training_range()
     _build_controller_markers()
+
+func _process(delta: float) -> void:
+    if not _xr_is_active():
+        return
+    _update_smooth_movement(delta)
+    _update_smooth_turn(delta)
+
+func _xr_is_active() -> bool:
+    var xr_interface := XRServer.find_interface("OpenXR")
+    return xr_interface != null and xr_interface.is_initialized()
+
+func _update_smooth_movement(delta: float) -> void:
+    # OpenXR's default action map exposes each controller's thumbstick as "primary".
+    var stick: Vector2 = left_controller.get_vector2("primary")
+    if stick.length() < stick_deadzone:
+        return
+
+    var input_vector := Vector2(stick.x, -stick.y)
+    if input_vector.length() > 1.0:
+        input_vector = input_vector.normalized()
+
+    # Move in the direction the headset faces, ignoring head pitch.
+    var head_forward := -xr_camera.global_transform.basis.z
+    head_forward.y = 0.0
+    head_forward = head_forward.normalized()
+    var head_right := xr_camera.global_transform.basis.x
+    head_right.y = 0.0
+    head_right = head_right.normalized()
+
+    var move_direction := head_right * input_vector.x + head_forward * input_vector.y
+    xr_origin.global_position += move_direction * move_speed * delta
+
+func _update_smooth_turn(delta: float) -> void:
+    var stick: Vector2 = right_controller.get_vector2("primary")
+    if absf(stick.x) < stick_deadzone:
+        return
+
+    # Rotate around the user's current head position, not the origin point.
+    var head_position_before: Vector3 = xr_camera.global_position
+    xr_origin.rotate_y(-stick.x * turn_speed * delta)
+    var head_position_after: Vector3 = xr_camera.global_position
+    xr_origin.global_position += head_position_before - head_position_after
 
 func _start_openxr() -> void:
     var xr_interface := XRServer.find_interface("OpenXR")
