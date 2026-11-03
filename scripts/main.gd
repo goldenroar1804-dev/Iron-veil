@@ -42,6 +42,7 @@ var right_hand_grip_was_pressed := false
 var left_trigger_was_pressed := false
 var rifle_ammo := 30
 var rifle_reserve_ammo := 90
+var mission_director: Node
 
 func _ready() -> void:
     _start_openxr()
@@ -718,6 +719,13 @@ func _spawn_tactical_enemies() -> void:
         Vector3(-12.0, 0.05, -43.0),
         Vector3(12.0, 0.05, -62.0)
     ]
+    var director_script := load("res://scripts/mission_director.gd") as Script
+    if director_script != null:
+        mission_director = Node.new()
+        mission_director.name = "MissionDirector"
+        mission_director.set_script(director_script)
+        add_child(mission_director)
+        mission_director.call("start_operation", enemy_positions.size())
     var enemy_script := load("res://scripts/tactical_enemy.gd") as Script
     if enemy_script == null:
         push_warning("IRON VEIL: tactical enemy script could not be loaded.")
@@ -727,6 +735,7 @@ func _spawn_tactical_enemies() -> void:
         enemy.name = "PvE_OpFor_%02d" % i
         enemy.position = enemy_positions[i]
         enemy.set_script(enemy_script)
+        enemy.set("aggression", randf_range(0.35, 0.95))
         var collision := CollisionShape3D.new()
         var capsule := CapsuleShape3D.new()
         capsule.radius = 0.30
@@ -755,6 +764,8 @@ func _spawn_tactical_enemies() -> void:
         enemy.set("body_mesh", uniform)
         enemy.set("head_mesh", head)
         add_child(enemy)
+        if mission_director != null:
+            mission_director.call("register_enemy", enemy)
 
 func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
     # Each house receives a randomized number and arrangement of indoor CQB targets.
