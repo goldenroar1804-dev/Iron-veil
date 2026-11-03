@@ -141,7 +141,7 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     hand.position = Vector3(0.0, -0.025, -0.075)
     # Controller local -Z is the hand's forward direction. Keep the hand in
     # controller space instead of rotating the palm so its fingers point down.
-    hand.rotation = Quaternion.IDENTITY
+    hand.quaternion = Quaternion.IDENTITY
     parent.add_child(hand)
     if is_left:
         left_hand_root = hand
