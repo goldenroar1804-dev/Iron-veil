@@ -33,15 +33,24 @@ jobs:
             test "$(stat -c%s "$file")" -gt 10000
           done
 
+      - name: Generate detailed weapon model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check trimesh
+          python tools/build_weapon_model.py
+          test "$(head -c 4 assets/models/weapons/m4_carbine.glb)" = "glTF"
+          test "$(stat -c%s assets/models/weapons/m4_carbine.glb)" -gt 10000
+
       - name: Commit downloaded models
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/environment/suburban_house.glb assets/models/environment/sedan.glb
+          git add assets/models/environment/suburban_house.glb assets/models/environment/sedan.glb assets/models/weapons/m4_carbine.glb
           if ! git diff --cached --quiet; then
-            git commit -m "Add CC0 detailed house and sedan GLB assets"
+            git commit -m "Add detailed house, sedan, and M4 3D assets"
             git push
           else
             echo "The asset files are already up to date."
