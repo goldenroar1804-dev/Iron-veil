@@ -1,7 +1,7 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Replaced the plain grass lot surface with a flat generated grass-color texture using subtle mottled variation tiled across the ground; no individual blades, tufts, or raised grass geometry are created.
-Code commit: 024a4e320b0c8a99c6bc75182c37d62494169078
-Documentation commit: b040eb153bd00a2e24b31064fadf32d8ccd513f8
+Latest update: Improved shared procedural materials with seamless multi-scale mottling, finer surface grain, closer texture tiling, and material-specific roughness/metalness. Existing primitive models have not yet been replaced.
+Code commit: a05945a4e1f7dd8b3bd8c45b226f578d0db512ab
+Documentation commit: 0bf76e751e9cf9ac8465a595a1bd51ad8898c668
 
 This file is updated whenever the assistant makes a repository change.
