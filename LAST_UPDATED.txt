@@ -1,7 +1,7 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added standing-capsule physics checks to smooth XR locomotion so the player is blocked by static walls and structures, with axis-separated wall sliding; documented that visual geometry remains procedural and that imported high-quality assets are still required for the requested realism.
-Code commit: 99c8a6ec896fb22d730d51436b5bda2eaea467f9
-Documentation commit: 78220aef50c6811f885a125a013dce063755eee6
+Latest update: Moved the second front window pane and trim away from the central doorway so the house entrance is open; updated the graphics roadmap to prioritize imported high-quality assets rather than further primitive-only modeling.
+Code commit: cd23802c8c81360f22cc379316372f5fbf3b393b
+Documentation commit: b1a0e8184063d0097620b7f5ed9cf86e8cc2aeae
 
 This file is updated whenever the assistant makes a repository change.
