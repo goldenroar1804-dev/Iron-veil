@@ -34,7 +34,7 @@ func _update_smooth_movement(delta: float) -> void:
     if stick.length() < stick_deadzone:
         return
 
-    var input_vector := Vector2(stick.x, -stick.y)
+    var input_vector := Vector2(stick.x, stick.y) # Corrected vertical axis: push forward to move forward.
     if input_vector.length() > 1.0:
         input_vector = input_vector.normalized()
 
