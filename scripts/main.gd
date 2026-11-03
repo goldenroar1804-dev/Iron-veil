@@ -65,7 +65,34 @@ func _update_smooth_movement(delta: float) -> void:
     head_right.y = 0.0
     head_right = head_right.normalized()
     var move_direction := head_right * input_vector.x + head_forward * input_vector.y
-    xr_origin.global_position += move_direction * move_speed * delta
+    var displacement := move_direction * move_speed * delta
+    # XR origin movement is manual, so engine physics will not stop it by itself.
+    # Sweep a standing capsule before moving; try each axis separately for wall sliding.
+    if not _player_space_blocked(displacement):
+        xr_origin.global_position += displacement
+    else:
+        var slide_x := Vector3(displacement.x, 0.0, 0.0)
+        var slide_z := Vector3(0.0, 0.0, displacement.z)
+        if not _player_space_blocked(slide_x):
+            xr_origin.global_position += slide_x
+        if not _player_space_blocked(slide_z):
+            xr_origin.global_position += slide_z
+
+func _player_space_blocked(displacement: Vector3) -> bool:
+    if displacement.length_squared() < 0.000001:
+        return false
+    var capsule := CapsuleShape3D.new()
+    capsule.radius = 0.28
+    capsule.height = 1.55
+    var query := PhysicsShapeQueryParameters3D.new()
+    query.shape = capsule
+    query.transform = Transform3D(Basis.IDENTITY, xr_origin.global_position + Vector3(0.0, 0.82, 0.0) + displacement)
+    query.collision_mask = 1
+    query.collide_with_bodies = true
+    query.collide_with_areas = false
+    query.margin = 0.02
+    var hits := get_world_3d().direct_space_state.intersect_shape(query, 8)
+    return not hits.is_empty()
 
 func _update_smooth_turn(delta: float) -> void:
     var stick: Vector2 = right_controller.get_vector2("primary")
