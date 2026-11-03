@@ -719,9 +719,9 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     _add_house_collider(label + "_BackCollision", center + Vector3(0, 1.55, 2.98), Vector3(7.7, 3.1, 0.16))
     _add_house_collider(label + "_LeftCollision", center + Vector3(-3.83, 1.55, 0), Vector3(0.16, 3.1, 6.0))
     _add_house_collider(label + "_RightCollision", center + Vector3(3.83, 1.55, 0), Vector3(0.16, 3.1, 6.0))
-    _add_house_collider(label + "_FrontLeftCollision", center + Vector3(-2.15, 1.55, -2.98), Vector3(3.35, 3.1, 0.16))
-    _add_house_collider(label + "_FrontRightCollision", center + Vector3(2.15, 1.55, -2.98), Vector3(3.35, 3.1, 0.16))
-    _add_house_collider(label + "_HeaderCollision", center + Vector3(0, 2.85, -2.98), Vector3(1.0, 0.5, 0.16))
+    _add_house_collider(label + "_FrontLeftCollision", center + Vector3(-2.225, 1.55, -2.98), Vector3(3.15, 3.1, 0.16))
+    _add_house_collider(label + "_FrontRightCollision", center + Vector3(2.225, 1.55, -2.98), Vector3(3.15, 3.1, 0.16))
+    _add_house_collider(label + "_HeaderCollision", center + Vector3(0, 2.85, -2.98), Vector3(1.4, 0.5, 0.16))
 
     # Ten walkable stair treads rise along the left interior wall to a second floor.
     for step in range(10):
@@ -732,6 +732,10 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
         _add_house_collider(label + "_StairCollision_%02d" % step, step_pos, Vector3(0.92, 0.18, 0.34))
     _add_box(label + "_UpperLanding", Vector3(1.0, 0.16, 1.25), center + Vector3(-2.35, 3.02, 1.55), Color(0.30, 0.27, 0.22))
     _add_house_collider(label + "_LandingCollision", center + Vector3(-2.35, 3.02, 1.55), Vector3(1.0, 0.16, 1.25))
+    # A compact upper-floor loft gives the staircase somewhere to lead; it
+    # leaves the central/right ground-floor room open for CQB movement.
+    _add_box(label + "_UpperFloor", Vector3(6.5, 0.16, 1.55), center + Vector3(0, 3.02, 1.82), Color(0.30, 0.27, 0.22))
+    _add_house_collider(label + "_UpperFloorCollision", center + Vector3(0, 3.02, 1.82), Vector3(6.5, 0.16, 1.55))
     _build_interactive_door(label, center)
 
 func _add_house_collider(label: String, location: Vector3, dimensions: Vector3) -> void:
