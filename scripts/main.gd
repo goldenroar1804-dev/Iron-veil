@@ -61,6 +61,7 @@ func _process(delta: float) -> void:
     var door_consumed_grip := _update_door_interaction()
     _animate_doors(delta)
     _update_weapon_grab(door_consumed_grip)
+    _update_two_hand_support()
     _update_weapon_reload()
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
@@ -384,6 +385,18 @@ func _update_weapon_grab(door_consumed_grip: bool = false) -> void:
         right_controller.trigger_haptic_pulse("haptic", 0.55, 0.45, 0.10, 0.0)
         print("IRON VEIL: M4 released")
     grip_was_pressed = right_grip
+
+func _update_two_hand_support() -> void:
+    if not rifle_held:
+        return
+    var left_grip := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.55
+    var foregrip_position := rifle.to_global(Vector3(0.0, 0.01, -0.53))
+    if left_grip and left_controller.global_position.distance_to(foregrip_position) < 0.70:
+        var support_direction := left_controller.global_position - right_controller.global_position
+        if support_direction.length_squared() > 0.01:
+            rifle.look_at(rifle.global_position + support_direction.normalized(), Vector3.UP)
+    else:
+        rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
 
 func _update_weapon_reload() -> void:
     var left_trigger := left_controller.is_button_pressed("trigger") or left_controller.get_float("trigger") > 0.65
@@ -906,8 +919,8 @@ func _build_interactive_door(label: String, center: Vector3) -> void:
     interactive_doors.append(hinge)
 
 func _update_door_interaction() -> bool:
-    var right_pressed := right_controller.is_button_pressed("grip")
-    var left_pressed := left_controller.is_button_pressed("grip")
+    var right_pressed := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
+    var left_pressed := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.55
     var right_edge := right_pressed and not door_right_grip_was_pressed
     var left_edge := left_pressed and not left_grip_was_pressed
     door_right_grip_was_pressed = right_pressed
