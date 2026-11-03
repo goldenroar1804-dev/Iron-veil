@@ -86,7 +86,7 @@ func _player_space_blocked(displacement: Vector3) -> bool:
     capsule.height = 1.55
     var query := PhysicsShapeQueryParameters3D.new()
     query.shape = capsule
-    query.transform = Transform3D(Basis.IDENTITY, xr_origin.global_position + Vector3(0.0, 0.82, 0.0) + displacement)
+    query.transform = Transform3D(Basis.IDENTITY, xr_origin.global_position + Vector3(0.0, 0.95, 0.0) + displacement)
     query.collision_mask = 1
     query.collide_with_bodies = true
     query.collide_with_areas = false
