@@ -37,6 +37,8 @@ var right_hand_thumb: Node3D
 var interactive_doors: Array[Node3D] = []
 var door_right_grip_was_pressed := false
 var left_grip_was_pressed := false
+var left_hand_grip_was_pressed := false
+var right_hand_grip_was_pressed := false
 
 func _ready() -> void:
     _start_openxr()
@@ -188,6 +190,14 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
         right_hand_thumb = thumb
 
 func _update_hand_pose() -> void:
+    var left_pressed := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.12
+    var right_pressed := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.12
+    if left_pressed and not left_hand_grip_was_pressed:
+        left_controller.trigger_haptic_pulse("haptic", 0.22, 0.35, 0.045, 0.0)
+    if right_pressed and not right_hand_grip_was_pressed and not rifle_held:
+        right_controller.trigger_haptic_pulse("haptic", 0.22, 0.35, 0.045, 0.0)
+    left_hand_grip_was_pressed = left_pressed
+    right_hand_grip_was_pressed = right_pressed
     _pose_one_hand(left_controller, left_hand_fingers, left_hand_thumb)
     _pose_one_hand(right_controller, right_hand_fingers, right_hand_thumb)
 
