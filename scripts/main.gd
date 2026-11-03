@@ -478,9 +478,9 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     _add_box(label + "_DoorHeader", Vector3(1.4, 0.65, 0.18), center + Vector3(0, 2.78, -2.66), wall_color)
     _add_box(label + "_Roof", Vector3(7.7, 0.35, 6.2), center + Vector3(0, 3.25, 0), Color(0.20, 0.18, 0.16))
     _add_box(label + "_WindowA", Vector3(1.25, 1.0, 0.07), center + Vector3(-1.6, 1.9, -2.81), Color(0.12, 0.22, 0.27))
-    _add_box(label + "_WindowB", Vector3(1.25, 1.0, 0.07), center + Vector3(0.0, 1.9, -2.81), Color(0.12, 0.22, 0.27))
+    _add_box(label + "_WindowB", Vector3(1.25, 1.0, 0.07), center + Vector3(1.6, 1.9, -2.81), Color(0.12, 0.22, 0.27))
     _add_box(label + "_WindowTrimA", Vector3(1.38, 0.08, 0.09), center + Vector3(-1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
-    _add_box(label + "_WindowTrimB", Vector3(1.38, 0.08, 0.09), center + Vector3(0.0, 2.43, -2.83), Color(0.82, 0.79, 0.68))
+    _add_box(label + "_WindowTrimB", Vector3(1.38, 0.08, 0.09), center + Vector3(1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
 
 func _build_parked_car(label: String, center: Vector3, body_color: Color) -> void:
     _add_box(label + "_Body", Vector3(1.8, 0.72, 3.8), center + Vector3(0, 0.72, 0), body_color)
