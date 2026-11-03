@@ -153,15 +153,7 @@ func _build_rifle() -> void:
     right_hand.position = Vector3(0.0, -0.19, -0.055)
     rifle.add_child(right_hand)
     _make_gloved_hand(right_hand, Vector3.ZERO, true)
-    # Support-hand model sits farther forward along the handguard.
-    var support_hand := Node3D.new()
-    support_hand.name = "SupportHandOnHandguard"
-    support_hand.position = Vector3(0.0, -0.035, -0.55)
-    rifle.add_child(support_hand)
-    _add_hand_piece(support_hand, "SupportPalm", Vector3(0.11, 0.105, 0.13), Vector3(0, 0, 0), Color(0.12, 0.14, 0.13))
-    for i in range(4):
-        var finger_x := (float(i) - 1.5) * 0.025
-        _add_hand_piece(support_hand, "SupportFinger_%d" % i, Vector3(0.02, 0.025, 0.10), Vector3(finger_x, -0.025, -0.105), Color(0.12, 0.14, 0.13))
+    # The tracked left glove is the support hand; no duplicate static hand is drawn.
 
     muzzle_flash = MeshInstance3D.new()
     muzzle_flash.name = "MuzzleFlash"
