@@ -1,6 +1,7 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Reworked the weapon as a more detailed M4-style carbine with an adjustable stock, receiver details, rail system, optic, magazine and barrel; replaced block-shaped glove fingers with rounded curled finger segments around the pistol grip; added three layered transparent muzzle-flash sprite cards at the muzzle.
-Commit: 3ed715dca7d2b090dffc301c5f30b6b10f052e3b
+Latest update: Reworked the weapon as a more detailed M4-style carbine with an adjustable stock, receiver details, rail system, optic, magazine and barrel; replaced block-shaped glove fingers with rounded curled finger segments around the pistol grip; added three layered transparent muzzle-flash sprite cards at the muzzle. README updated to document the new procedural assets.
+Code commit: 3ed715dca7d2b090dffc301c5f30b6b10f052e3b
+Documentation commit: c84645bcf3b4e81666255801e27074310cded44c
 
 This file is updated whenever the assistant makes a repository change.
