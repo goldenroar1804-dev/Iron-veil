@@ -736,7 +736,7 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     _add_box(label + "_WindowTrimA", Vector3(1.38, 0.08, 0.09), center + Vector3(-1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
     _add_box(label + "_WindowTrimB", Vector3(1.38, 0.08, 0.09), center + Vector3(1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
 
-    _install_environment_model(label, center, "res://assets/models/environment/suburban_house.glb", Vector3.ONE)
+    _install_environment_model(label, center, "res://assets/models/environment/suburban_house_cqb.glb", Vector3.ONE)
     # Imported house meshes are the visible shell. Discard every stale collider
     # created for the old box-house and rebuild a small, consistent collision shell.
     for child in get_children():
