@@ -28,6 +28,15 @@ var footstep_audio: AudioStreamPlayer3D
 var gun_download: HTTPRequest
 var step_download: HTTPRequest
 var detail_texture: ImageTexture
+var left_hand_root: Node3D
+var right_hand_root: Node3D
+var left_hand_fingers: Array[Node3D] = []
+var right_hand_fingers: Array[Node3D] = []
+var left_hand_thumb: Node3D
+var right_hand_thumb: Node3D
+var interactive_doors: Array[Node3D] = []
+var door_right_grip_was_pressed := false
+var left_grip_was_pressed := false
 
 func _ready() -> void:
     _start_openxr()
@@ -42,7 +51,10 @@ func _process(delta: float) -> void:
         return
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
-    _update_weapon_grab()
+    _update_hand_pose()
+    var used_for_door := _update_door_interaction()
+    if not used_for_door:
+        _update_weapon_grab()
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
@@ -112,36 +124,84 @@ func _build_hands() -> void:
     _make_human_hand(right_controller, "RightHumanHand")
 
 func _make_human_hand(parent: Node3D, hand_name: String) -> void:
-    # Imported hand visuals are optional; the tracked controller and all gameplay
-    # logic remain unchanged. Keep the procedural hand as a reliable fallback.
-    var hand_path := "res://assets/models/hands/left_hand.glb" if hand_name.begins_with("Left") else "res://assets/models/hands/right_hand.glb"
-    var imported_hand := Node3D.new()
-    imported_hand.name = hand_name + "_Imported"
-    imported_hand.position = Vector3(0.0, -0.025, -0.075)
-    parent.add_child(imported_hand)
-    if _try_add_imported_model(imported_hand, hand_path, "HandModel"):
-        return
-    imported_hand.queue_free()
-
+    # Use articulated runtime fingers so grip/trigger input visibly drives the hand.
+    # The local X rotation turns the original palm plane upright and points fingers
+    # out along controller forward (-Z), instead of down toward the floor.
+    var is_left := hand_name.begins_with("Left")
     var hand := Node3D.new()
     hand.name = hand_name
     hand.position = Vector3(0.0, -0.025, -0.075)
+    hand.rotation_degrees.x = 90.0
     parent.add_child(hand)
-    var skin := Color(0.39, 0.27, 0.20)
-    var glove := Color(0.12, 0.14, 0.12)
-    _add_hand_sphere(hand, "Palm", Vector3(0.085, 0.105, 0.035), Vector3.ZERO, skin)
-    _add_hand_sphere(hand, "GloveBack", Vector3(0.075, 0.088, 0.018), Vector3(0, 0.018, -0.023), glove)
-    _add_hand_capsule(hand, "Wrist", 0.033, 0.09, Vector3(0, 0, 0.09), skin)
+    if is_left:
+        left_hand_root = hand
+    else:
+        right_hand_root = hand
+
+    var glove := Color(0.105, 0.12, 0.105)
+    var fabric := Color(0.19, 0.21, 0.17)
+    var rubber := Color(0.045, 0.052, 0.047)
+    _add_hand_sphere(hand, "Palm", Vector3(0.078, 0.095, 0.032), Vector3(0, 0, 0), glove)
+    _add_hand_sphere(hand, "PaddedBack", Vector3(0.071, 0.078, 0.018), Vector3(0, 0.005, 0.028), fabric)
+    _add_hand_capsule(hand, "WristCuff", 0.039, 0.105, Vector3(0, 0.105, 0), rubber)
+
+    var finger_array: Array[Node3D] = []
     for i in range(4):
-        var x := (float(i) - 1.5) * 0.032
-        var lengths := [0.075, 0.092, 0.087, 0.068]
-        var base := _add_hand_capsule(hand, "Finger_%d_Base" % i, 0.012, lengths[i], Vector3(x, -0.075, -0.008), skin)
-        base.rotation_degrees.x = -12.0
-        var knuckle := _add_hand_sphere(hand, "Finger_%d_Knuckle" % i, Vector3(0.014, 0.018, 0.014), Vector3(x, -0.12, -0.012), skin)
-        var tip := _add_hand_capsule(hand, "Finger_%d_Tip" % i, 0.010, 0.052, Vector3(x, -0.145, -0.025), skin)
-        tip.rotation_degrees.x = -38.0
-    var thumb := _add_hand_capsule(hand, "Thumb", 0.014, 0.085, Vector3(0.065, -0.035, 0.02), skin)
-    thumb.rotation_degrees.z = -48.0
+        var x := (float(i) - 1.5) * 0.035
+        var finger := Node3D.new()
+        finger.name = "Finger_%d_Pivot" % i
+        finger.position = Vector3(x, -0.065, 0.0)
+        hand.add_child(finger)
+        _add_hand_capsule(finger, "Proximal", 0.0125, 0.075, Vector3(0, -0.038, 0), glove)
+        _add_hand_sphere(finger, "KnucklePad", Vector3(0.014, 0.014, 0.012), Vector3(0, -0.012, 0.018), fabric)
+        var distal := Node3D.new()
+        distal.name = "DistalJoint"
+        distal.position = Vector3(0, -0.071, 0)
+        finger.add_child(distal)
+        _add_hand_capsule(distal, "Distal", 0.0105, 0.060, Vector3(0, -0.029, 0), glove)
+        finger.set_meta("distal_joint", distal)
+        finger_array.append(finger)
+
+    var thumb := Node3D.new()
+    thumb.name = "ThumbPivot"
+    thumb.position = Vector3(0.075 if not is_left else -0.075, -0.015, 0.0)
+    hand.add_child(thumb)
+    _add_hand_capsule(thumb, "ThumbBase", 0.015, 0.075, Vector3(0.0, -0.035, 0.0), glove)
+    var thumb_tip := Node3D.new()
+    thumb_tip.name = "ThumbTipJoint"
+    thumb_tip.position = Vector3(0.0, -0.068, 0.0)
+    thumb.add_child(thumb_tip)
+    _add_hand_capsule(thumb_tip, "ThumbTip", 0.012, 0.045, Vector3(0.0, -0.022, 0.0), glove)
+
+    if is_left:
+        left_hand_fingers = finger_array
+        left_hand_thumb = thumb
+    else:
+        right_hand_fingers = finger_array
+        right_hand_thumb = thumb
+
+func _update_hand_pose() -> void:
+    _pose_one_hand(left_controller, left_hand_fingers, left_hand_thumb)
+    _pose_one_hand(right_controller, right_hand_fingers, right_hand_thumb)
+
+func _pose_one_hand(controller: XRController3D, fingers: Array[Node3D], thumb: Node3D) -> void:
+    if controller == null:
+        return
+    var grip := maxf(controller.get_float("grip"), 1.0 if controller.is_button_pressed("grip") else 0.0)
+    var trigger := maxf(controller.get_float("trigger"), 1.0 if controller.is_button_pressed("trigger") else 0.0)
+    for i in range(fingers.size()):
+        var finger := fingers[i]
+        var curl := grip * 1.05
+        if i == 1:
+            curl = maxf(curl, trigger * 1.05)
+        finger.rotation.x = curl
+        var distal := finger.get_meta("distal_joint") as Node3D
+        if distal != null:
+            distal.rotation.x = curl * 0.72
+    if thumb != null:
+        thumb.rotation.z = -grip * 0.78 * (1.0 if controller == right_controller else -1.0)
+        thumb.rotation.x = grip * 0.30
+
 
 func _add_hand_sphere(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
     var part := MeshInstance3D.new()
@@ -521,12 +581,13 @@ func _build_suburban_block() -> void:
         _build_house(house_name, house_centers[i], house_colors[i])
         _spawn_random_house_targets(house_name, house_centers[i])
 
-    # Low privacy fences, gates, hedges and street furniture make cover lanes.
+    # Fences/hedges live in the gaps between house lots, outside the
+    # imported house footprints and clear of the front-door approach.
     for side in [-1.0, 1.0]:
-        for i in range(10):
-            var zpos := -5.0 - float(i) * 7.5
-            _build_fence_segment("Fence_%s_%d" % [str(side), i], side * 7.2, zpos)
-            _build_hedge("Hedge_%s_%d" % [str(side), i], Vector3(side * 7.8, 0.45, zpos - 2.1))
+        for i in range(3):
+            var zpos := (-20.0 if side < 0.0 else -28.0) - float(i) * 20.0
+            _build_fence_segment("Fence_%s_%d" % [str(side), i], side * 8.45, zpos)
+            _build_hedge("Hedge_%s_%d" % [str(side), i], Vector3(side * 9.05, 0.45, zpos + 2.7))
         _add_streetlight(side * 5.0, -12.0)
         _add_streetlight(side * 5.0, -30.0)
 
@@ -580,7 +641,8 @@ func _grass_material() -> StandardMaterial3D:
     return mat
 
 func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
-    # Enterable shell with a doorway opening and a walkable interior floor.
+    # Imported shell supplies the detailed exterior. Replace the old prototype
+    # wall colliders with a matching playable interior collision layout.
     _add_box(label + "_InteriorFloor", Vector3(6.7, 0.12, 5.2), center + Vector3(0, 0.02, 0), Color(0.34, 0.31, 0.26))
     _add_box(label + "_BackWall", Vector3(7.0, 3.1, 0.18), center + Vector3(0, 1.55, 2.66), wall_color)
     _add_box(label + "_LeftWall", Vector3(0.18, 3.1, 5.5), center + Vector3(-3.41, 1.55, 0), wall_color)
@@ -593,9 +655,112 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     _add_box(label + "_WindowB", Vector3(1.25, 1.0, 0.07), center + Vector3(1.6, 1.9, -2.81), Color(0.12, 0.22, 0.27))
     _add_box(label + "_WindowTrimA", Vector3(1.38, 0.08, 0.09), center + Vector3(-1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
     _add_box(label + "_WindowTrimB", Vector3(1.38, 0.08, 0.09), center + Vector3(1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
-    # Replace only visible house meshes when an authored model is installed.
-    # The procedural StaticBody3D/CollisionShape3D nodes remain untouched.
+
     _install_environment_model(label, center, "res://assets/models/environment/suburban_house.glb", Vector3.ONE)
+    # Imported house meshes are the visible shell. Discard every stale collider
+    # created for the old box-house and rebuild a small, consistent collision shell.
+    for child in get_children():
+        if child is StaticBody3D and child.name.begins_with(label + "_"):
+            child.queue_free()
+    _add_house_collider(label + "_FloorCollision", center + Vector3(0, -0.04, 0), Vector3(7.2, 0.18, 5.9))
+    _add_house_collider(label + "_BackCollision", center + Vector3(0, 1.55, 2.98), Vector3(7.7, 3.1, 0.16))
+    _add_house_collider(label + "_LeftCollision", center + Vector3(-3.83, 1.55, 0), Vector3(0.16, 3.1, 6.0))
+    _add_house_collider(label + "_RightCollision", center + Vector3(3.83, 1.55, 0), Vector3(0.16, 3.1, 6.0))
+    _add_house_collider(label + "_FrontLeftCollision", center + Vector3(-2.15, 1.55, -2.98), Vector3(3.35, 3.1, 0.16))
+    _add_house_collider(label + "_FrontRightCollision", center + Vector3(2.15, 1.55, -2.98), Vector3(3.35, 3.1, 0.16))
+    _add_house_collider(label + "_HeaderCollision", center + Vector3(0, 2.85, -2.98), Vector3(1.0, 0.5, 0.16))
+
+    # Ten walkable stair treads rise along the left interior wall to a second floor.
+    for step in range(10):
+        var tread := 0.29
+        var rise := 0.285
+        var step_pos := center + Vector3(-2.35, 0.16 + float(step) * rise, -1.45 + float(step) * tread)
+        _add_box(label + "_Stair_%02d" % step, Vector3(0.92, 0.18, 0.34), step_pos, Color(0.29, 0.25, 0.20))
+        _add_house_collider(label + "_StairCollision_%02d" % step, step_pos, Vector3(0.92, 0.18, 0.34))
+    _add_box(label + "_UpperLanding", Vector3(1.0, 0.16, 1.25), center + Vector3(-2.35, 3.02, 1.55), Color(0.30, 0.27, 0.22))
+    _add_house_collider(label + "_LandingCollision", center + Vector3(-2.35, 3.02, 1.55), Vector3(1.0, 0.16, 1.25))
+    _build_interactive_door(label, center)
+
+func _add_house_collider(label: String, location: Vector3, dimensions: Vector3) -> void:
+    var body := StaticBody3D.new()
+    body.name = label
+    body.position = location
+    var shape := CollisionShape3D.new()
+    var box_shape := BoxShape3D.new()
+    box_shape.size = dimensions
+    shape.shape = box_shape
+    body.add_child(shape)
+    add_child(body)
+
+func _build_interactive_door(label: String, center: Vector3) -> void:
+    var hinge := Node3D.new()
+    hinge.name = label + "_InteractiveDoor"
+    hinge.position = center + Vector3(-0.58, 0.0, -2.91)
+    hinge.set_meta("open", false)
+    hinge.set_meta("target_angle", 0.0)
+    add_child(hinge)
+    hinge.add_to_group("interactive_doors")
+    var panel := MeshInstance3D.new()
+    panel.name = "DoorPanel"
+    var mesh := BoxMesh.new()
+    mesh.size = Vector3(0.06, 2.12, 1.16)
+    panel.mesh = mesh
+    panel.position = Vector3(0.58, 1.06, 0.0)
+    panel.material_override = _material(Color(0.25, 0.17, 0.11))
+    hinge.add_child(panel)
+    var body := StaticBody3D.new()
+    body.name = "DoorCollider"
+    body.position = panel.position
+    var collision := CollisionShape3D.new()
+    var shape := BoxShape3D.new()
+    shape.size = mesh.size
+    collision.shape = shape
+    body.add_child(collision)
+    hinge.add_child(body)
+    var knob := MeshInstance3D.new()
+    knob.name = "DoorHandle"
+    var knob_mesh := SphereMesh.new()
+    knob_mesh.radius = 0.035
+    knob_mesh.height = 0.07
+    knob.mesh = knob_mesh
+    knob.position = Vector3(1.02, 1.02, -0.04)
+    knob.material_override = _material(Color(0.55, 0.48, 0.30))
+    hinge.add_child(knob)
+    interactive_doors.append(hinge)
+
+func _update_door_interaction() -> bool:
+    var right_pressed := right_controller.is_button_pressed("grip")
+    var left_pressed := left_controller.is_button_pressed("grip")
+    var right_edge := right_pressed and not door_right_grip_was_pressed
+    var left_edge := left_pressed and not left_grip_was_pressed
+    door_right_grip_was_pressed = right_pressed
+    left_grip_was_pressed = left_pressed
+    if not right_pressed and not left_pressed:
+        return false
+    var controller := right_controller if right_pressed else left_controller
+    var edge := right_edge if right_pressed else left_edge
+    var nearest: Node3D = null
+    var nearest_distance := 1.45
+    for door in interactive_doors:
+        if not is_instance_valid(door):
+            continue
+        var distance := controller.global_position.distance_to(door.global_position + Vector3(0, 1.0, 0))
+        if distance < nearest_distance:
+            nearest = door
+            nearest_distance = distance
+    if nearest == null:
+        return false
+    if edge:
+        var opening := not bool(nearest.get_meta("open"))
+        nearest.set_meta("open", opening)
+        nearest.set_meta("target_angle", deg_to_rad(-95.0 if opening else 0.0))
+        controller.trigger_haptic_pulse("haptic", 0.75, 0.7, 0.13, 0.0)
+    for door in interactive_doors:
+        if is_instance_valid(door):
+            var target := float(door.get_meta("target_angle"))
+            door.rotation.y = lerp_angle(door.rotation.y, target, 1.0 - exp(-8.0 * get_process_delta_time()))
+    return true
+
 
 func _build_parked_car(label: String, center: Vector3, body_color: Color) -> void:
     _add_box(label + "_Body", Vector3(1.8, 0.72, 3.8), center + Vector3(0, 0.72, 0), body_color)
