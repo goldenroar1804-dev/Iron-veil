@@ -169,7 +169,7 @@ func _find_nearby_cover(player_position: Vector3) -> Vector3:
         capsule.radius = 0.28
         capsule.height = 1.6
         clearance.shape = capsule
-        clearance.transform = Transform3D(Basis.IDENTITY, candidate + Vector3.UP * 0.8)
+        clearance.transform = Transform3D(Basis.IDENTITY, candidate + Vector3.UP * 0.95)
         clearance.exclude = [get_rid()]
         var blocked := get_world_3d().direct_space_state.intersect_shape(clearance, 4)
         if not blocked.is_empty():
