@@ -1,6 +1,6 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added a detailed low-poly VR carbine, visible gloved hands, suburban street environment, parked cars, fences, houses, and four human-silhouette CQB targets.
-Commit: e64409b67460f1da6074e5b6c48c8195218e7b9d
+Latest update: Added grip-button rifle pickup/drop, muzzle flash, synthesized gunshot and footstep effects, corrected right-hand attachment, and enterable house shells with doorway openings.
+Commit: 4fa403743e597dd34a85028f8f391c0cb990e643
 
 This file is updated whenever the assistant makes a repository change.
