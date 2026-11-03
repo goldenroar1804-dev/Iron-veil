@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check trimesh
+          python -m pip install --disable-pip-version-check trimesh scipy
           python tools/build_weapon_model.py
           test "$(head -c 4 assets/models/weapons/m4_carbine.glb)" = "glTF"
           test "$(stat -c%s assets/models/weapons/m4_carbine.glb)" -gt 10000
