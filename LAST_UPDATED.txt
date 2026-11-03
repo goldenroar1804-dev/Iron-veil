@@ -1,7 +1,7 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Separated both human-shaped procedural hands from the rifle and made them follow their tracked controllers; placed the rifle on a pickup stand so it must be physically reached for and grabbed at mission start; added static collision to architecture and vehicle props including car wheels; expanded the street block to eight houses and randomized one to three CQB targets inside each house.
-Code commit: 065db2e167098e5149ab68fee58b1b399656cb2c
-Documentation commit: f2f7c75ee962197a915ea3fe3f29d251cdce8d1c
+Latest update: Added standing-capsule physics checks to smooth XR locomotion so the player is blocked by static walls and structures, with axis-separated wall sliding; documented that visual geometry remains procedural and that imported high-quality assets are still required for the requested realism.
+Code commit: 99c8a6ec896fb22d730d51436b5bda2eaea467f9
+Documentation commit: 78220aef50c6811f885a125a013dce063755eee6
 
 This file is updated whenever the assistant makes a repository change.
