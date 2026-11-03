@@ -57,3 +57,11 @@ The ground grass is a flat generated color texture with subtle mottled variation
 
 ## Surface material pass
 The shared material detail tile now uses seamless broad mottling plus finer grain, with closer texture tiling and roughness/metalness tuned by material color. This improves surface breakup on the existing procedural scene without adding high-resolution texture memory. It does not replace the primitive weapon, hand, house, or vehicle meshes; those remain a separate modeling task.
+
+
+## Optional imported Godot assets (latest update)
+The project now supports an optional imported M4-style GLB at `res://assets/models/weapons/m4_carbine.glb`. When present, it replaces the procedural rifle mesh while preserving the existing pickup, firing, muzzle-flash, and controller-attachment logic. If the GLB is absent or cannot load, the procedural rifle remains the fallback.
+
+Bundled rifle and concrete-footstep audio can now be placed at `res://assets/audio/rifle_shot.ogg` and `res://assets/audio/footsteps_concrete.ogg` (WAV and MP3 are also accepted). Local audio is preferred; the existing CC0 download-and-cache behavior remains the fallback.
+
+See [assets/ASSET_IMPORT_GUIDE.md](assets/ASSET_IMPORT_GUIDE.md) for exact paths, scale/orientation requirements, suggested free asset sources, license-recording guidance, and Quest optimization notes. House, vehicle, and hand models are still procedural; their imported overrides are not wired yet. No third-party model files are bundled by this code update, and the imported-model path still needs a headset test.
