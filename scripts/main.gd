@@ -710,6 +710,52 @@ func _build_suburban_block() -> void:
 
 
 
+func _spawn_tactical_enemies() -> void:
+    xr_camera.add_to_group("player_camera")
+    var enemy_positions: Array[Vector3] = [
+        Vector3(-12.0, 0.05, -13.0),
+        Vector3(12.0, 0.05, -24.0),
+        Vector3(-12.0, 0.05, -43.0),
+        Vector3(12.0, 0.05, -62.0)
+    ]
+    var enemy_script := load("res://scripts/tactical_enemy.gd") as Script
+    if enemy_script == null:
+        push_warning("IRON VEIL: tactical enemy script could not be loaded.")
+        return
+    for i in range(enemy_positions.size()):
+        var enemy := CharacterBody3D.new()
+        enemy.name = "PvE_OpFor_%02d" % i
+        enemy.position = enemy_positions[i]
+        enemy.set_script(enemy_script)
+        var collision := CollisionShape3D.new()
+        var capsule := CapsuleShape3D.new()
+        capsule.radius = 0.30
+        capsule.height = 1.75
+        collision.shape = capsule
+        collision.position.y = 0.88
+        enemy.add_child(collision)
+        var uniform := MeshInstance3D.new()
+        uniform.name = "Uniform"
+        var torso := CapsuleMesh.new()
+        torso.radius = 0.29
+        torso.height = 1.25
+        uniform.mesh = torso
+        uniform.position.y = 0.92
+        uniform.material_override = _material(Color(0.19, 0.22, 0.18))
+        enemy.add_child(uniform)
+        var head := MeshInstance3D.new()
+        head.name = "Head"
+        var head_shape := SphereMesh.new()
+        head_shape.radius = 0.16
+        head_shape.height = 0.32
+        head.mesh = head_shape
+        head.position.y = 1.68
+        head.material_override = _material(Color(0.34, 0.27, 0.21))
+        enemy.add_child(head)
+        enemy.set("body_mesh", uniform)
+        enemy.set("head_mesh", head)
+        add_child(enemy)
+
 func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
     # Each house receives a randomized number and arrangement of indoor CQB targets.
     var count := randi_range(1, 3)
