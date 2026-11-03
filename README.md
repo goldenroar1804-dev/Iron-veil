@@ -53,3 +53,7 @@ Moved the second front window and its trim to the right-side wall section so the
 
 ## Grass rendering
 The ground grass is a flat generated color texture with subtle mottled variation tiled across the terrain. No individual grass blades, raised tufts, or grass geometry are generated, keeping the surface flat and Quest-friendly.
+
+
+## Surface material pass
+The shared material detail tile now uses seamless broad mottling plus finer grain, with closer texture tiling and roughness/metalness tuned by material color. This improves surface breakup on the existing procedural scene without adding high-resolution texture memory. It does not replace the primitive weapon, hand, house, or vehicle meshes; those remain a separate modeling task.
