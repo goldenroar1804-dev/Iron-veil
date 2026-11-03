@@ -9,6 +9,12 @@ enum BrainState { GUARD, INVESTIGATE, SEARCH, ENGAGE, RETREAT, DOWN }
 @export var hearing_radius := 24.0
 
 var target: Node3D
+var aggression := 0.65
+var cover_position := Vector3.ZERO
+var cover_refresh := 0.0
+static var shared_alert_position := Vector3.ZERO
+static var shared_alert_revision := 0
+var seen_alert_revision := 0
 var state: BrainState = BrainState.GUARD
 var home_position := Vector3.ZERO
 var last_known_position := Vector3.ZERO
@@ -63,12 +69,20 @@ func _physics_process(delta: float) -> void:
 
     if can_see:
         last_known_position = target.global_position
+        if state != BrainState.ENGAGE and state != BrainState.RETREAT:
+            shared_alert_position = target.global_position
+            shared_alert_revision += 1
         if distance < 2.8:
             state = BrainState.RETREAT
         elif distance < 15.0:
             state = BrainState.ENGAGE
         else:
             state = BrainState.GUARD
+    elif seen_alert_revision != shared_alert_revision:
+        seen_alert_revision = shared_alert_revision
+        last_known_position = shared_alert_position
+        investigate_timer = 4.0
+        state = BrainState.INVESTIGATE
     elif state == BrainState.INVESTIGATE:
         investigate_timer = maxf(0.0, investigate_timer - delta)
         if global_position.distance_to(last_known_position) < 1.0 or investigate_timer <= 0.0:
@@ -93,11 +107,18 @@ func _physics_process(delta: float) -> void:
         BrainState.SEARCH:
             desired = Vector3(strafe_sign, 0.0, -0.25)
         BrainState.ENGAGE:
-            var away := -to_player.normalized()
-            var side := Vector3.UP.cross(away).normalized() * strafe_sign
-            desired = side * 0.8
-            if distance > 8.0:
-                desired += to_player.normalized() * 0.45
+            cover_refresh = maxf(0.0, cover_refresh - delta)
+            if cover_refresh <= 0.0:
+                cover_position = _find_nearby_cover(target.global_position)
+                cover_refresh = randf_range(2.0, 3.5)
+            if cover_position != Vector3.ZERO and global_position.distance_to(cover_position) > 0.65:
+                desired = cover_position - global_position
+            else:
+                var away := -to_player.normalized()
+                var side := Vector3.UP.cross(away).normalized() * strafe_sign
+                desired = side * (0.35 + aggression * 0.75)
+                if distance > 8.0:
+                    desired += to_player.normalized() * 0.45
         BrainState.RETREAT:
             desired = -to_player.normalized()
         BrainState.GUARD:
@@ -123,6 +144,35 @@ func _physics_process(delta: float) -> void:
     else:
         velocity.y = -0.05
     move_and_slide()
+
+
+func _find_nearby_cover(player_position: Vector3) -> Vector3:
+    var best := Vector3.ZERO
+    var best_score := -INF
+    for i in range(8):
+        var angle := TAU * float(i) / 8.0
+        var candidate := global_position + Vector3(cos(angle), 0.0, sin(angle)) * 1.7
+        var from_point := candidate + Vector3.UP * 1.25
+        var query := PhysicsRayQueryParameters3D.create(from_point, player_position)
+        query.exclude = [get_rid()]
+        var obstruction := get_world_3d().direct_space_state.intersect_ray(query)
+        if obstruction.is_empty():
+            continue
+        var clearance := PhysicsShapeQueryParameters3D.new()
+        var capsule := CapsuleShape3D.new()
+        capsule.radius = 0.28
+        capsule.height = 1.6
+        clearance.shape = capsule
+        clearance.transform = Transform3D(Basis.IDENTITY, candidate + Vector3.UP * 0.8)
+        clearance.exclude = [get_rid()]
+        var blocked := get_world_3d().direct_space_state.intersect_shape(clearance, 4)
+        if not blocked.is_empty():
+            continue
+        var score := -candidate.distance_to(global_position) - absf(candidate.distance_to(player_position) - 5.0) * 0.1
+        if score > best_score:
+            best_score = score
+            best = candidate
+    return best
 
 func _has_line_of_sight(point: Vector3) -> bool:
     var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.35, point)
