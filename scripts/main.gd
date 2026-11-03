@@ -81,30 +81,40 @@ func _update_smooth_turn(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_hands() -> void:
-    _make_support_hand(left_controller)
+    _make_human_hand(left_controller, "LeftHumanHand")
+    _make_human_hand(right_controller, "RightHumanHand")
 
-func _make_support_hand(parent: Node3D) -> void:
+func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     var hand := Node3D.new()
-    hand.name = "SupportGlovedHand"
-    hand.position = Vector3(0.0, -0.035, -0.10)
+    hand.name = hand_name
+    hand.position = Vector3(0.0, -0.025, -0.075)
     parent.add_child(hand)
-    _build_gripping_glove(hand, false)
-
-func _build_gripping_glove(parent: Node3D, around_grip: bool) -> void:
-    var glove := Color(0.075, 0.085, 0.078)
-    var fabric := Color(0.16, 0.18, 0.15)
-    # Rounded palm and cuff; fingers are curved capsule segments, not blocks.
-    _add_hand_capsule(parent, "Palm", 0.052, 0.105, Vector3(0, 0, 0), glove)
-    _add_hand_capsule(parent, "Wrist", 0.044, 0.07, Vector3(0, 0, 0.09), fabric)
+    var skin := Color(0.39, 0.27, 0.20)
+    var glove := Color(0.12, 0.14, 0.12)
+    _add_hand_sphere(hand, "Palm", Vector3(0.085, 0.105, 0.035), Vector3.ZERO, skin)
+    _add_hand_sphere(hand, "GloveBack", Vector3(0.075, 0.088, 0.018), Vector3(0, 0.018, -0.023), glove)
+    _add_hand_capsule(hand, "Wrist", 0.033, 0.09, Vector3(0, 0, 0.09), skin)
     for i in range(4):
-        var x := (float(i) - 1.5) * 0.024
-        _add_hand_capsule(parent, "FingerBase_%d" % i, 0.012, 0.060, Vector3(x, -0.018, -0.060), glove)
-        var tip := _add_hand_capsule(parent, "FingerCurl_%d" % i, 0.011, 0.050, Vector3(x * 0.72, -0.045, -0.090), glove)
-        tip.rotation_degrees.x = -48.0
-    var thumb := _add_hand_capsule(parent, "Thumb", 0.014, 0.080, Vector3(0.058, -0.012, -0.025), glove)
-    thumb.rotation_degrees = Vector3(0, 0, -55)
-    if around_grip:
-        parent.rotation_degrees = Vector3(-8, 0, 0)
+        var x := (float(i) - 1.5) * 0.032
+        var lengths := [0.075, 0.092, 0.087, 0.068]
+        var base := _add_hand_capsule(hand, "Finger_%d_Base" % i, 0.012, lengths[i], Vector3(x, -0.075, -0.008), skin)
+        base.rotation_degrees.x = -12.0
+        var knuckle := _add_hand_sphere(hand, "Finger_%d_Knuckle" % i, Vector3(0.014, 0.018, 0.014), Vector3(x, -0.12, -0.012), skin)
+        var tip := _add_hand_capsule(hand, "Finger_%d_Tip" % i, 0.010, 0.052, Vector3(x, -0.145, -0.025), skin)
+        tip.rotation_degrees.x = -38.0
+    var thumb := _add_hand_capsule(hand, "Thumb", 0.014, 0.085, Vector3(0.065, -0.035, 0.02), skin)
+    thumb.rotation_degrees.z = -48.0
+
+func _add_hand_sphere(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
+    var part := MeshInstance3D.new()
+    part.name = label
+    var mesh := SphereMesh.new()
+    part.mesh = mesh
+    part.scale = dimensions * 2.0
+    part.position = location
+    part.material_override = _material(tint)
+    parent.add_child(part)
+    return part
 
 func _add_hand_capsule(parent: Node3D, label: String, radius: float, length: float, location: Vector3, tint: Color) -> MeshInstance3D:
     var part := MeshInstance3D.new()
@@ -126,8 +136,11 @@ func _build_rifle() -> void:
     add_child(rifle)
     var forward := -xr_camera.global_transform.basis.z
     forward.y = 0.0
-    rifle.global_position = xr_camera.global_position + forward.normalized() * 0.85 + Vector3(0, -0.55, 0)
+    rifle.global_position = xr_camera.global_position + forward.normalized() * 0.72 + Vector3(0, -0.78, 0)
     rifle.global_rotation = xr_camera.global_rotation
+    _add_box("WeaponPickupStand_Top", Vector3(0.55, 0.06, 0.42), rifle.global_position + Vector3(0, -0.42, 0), Color(0.18, 0.19, 0.17))
+    _add_box("WeaponPickupStand_LegA", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(-0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
+    _add_box("WeaponPickupStand_LegB", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
 
     var black := Color(0.045, 0.052, 0.048)
     var receiver := Color(0.105, 0.115, 0.105)
@@ -167,14 +180,6 @@ func _build_rifle() -> void:
     for side in [-1.0, 1.0]:
         _add_weapon_box(rifle, "SideRail_%s" % side, Vector3(0.018, 0.045, 0.27), Vector3(side * 0.064, 0.01, -0.53), black)
         _add_weapon_box(rifle, "HandStop_%s" % side, Vector3(0.035, 0.06, 0.045), Vector3(side * 0.073, -0.01, -0.64), steel)
-
-    # Right hand sits around the pistol grip: palm behind it, fingers curl across it.
-    var right_hand := Node3D.new()
-    right_hand.name = "RightHand_WrappedAroundPistolGrip"
-    right_hand.position = Vector3(0.075, -0.19, -0.085)
-    right_hand.rotation_degrees = Vector3(0, 0, -10)
-    rifle.add_child(right_hand)
-    _build_gripping_glove(right_hand, true)
 
     # Three offset, crossed transparent flame cards create a broad layered burst
     # directly at the muzzle rather than a thin line.
@@ -237,7 +242,7 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
 
 func _update_weapon_grab() -> void:
     var right_grip := right_controller.is_button_pressed("grip")
-    if not rifle_held and right_grip:
+    if not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
         rifle.reparent(right_controller, false)
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
