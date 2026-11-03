@@ -39,6 +39,9 @@ var door_right_grip_was_pressed := false
 var left_grip_was_pressed := false
 var left_hand_grip_was_pressed := false
 var right_hand_grip_was_pressed := false
+var left_trigger_was_pressed := false
+var rifle_ammo := 30
+var rifle_reserve_ammo := 90
 
 func _ready() -> void:
     _start_openxr()
@@ -54,9 +57,10 @@ func _process(delta: float) -> void:
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
     _update_hand_pose()
-    _update_door_interaction()
+    var door_consumed_grip := _update_door_interaction()
     _animate_doors(delta)
-    _update_weapon_grab()
+    _update_weapon_grab(door_consumed_grip)
+    _update_weapon_reload()
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
@@ -364,9 +368,9 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
     part.material_override = _material(tint)
     parent.add_child(part)
 
-func _update_weapon_grab() -> void:
-    var right_grip := right_controller.is_button_pressed("grip")
-    if not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
+func _update_weapon_grab(door_consumed_grip: bool = false) -> void:
+    var right_grip := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
+    if not door_consumed_grip and not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
         rifle.reparent(right_controller, false)
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
@@ -380,16 +384,28 @@ func _update_weapon_grab() -> void:
         print("IRON VEIL: M4 released")
     grip_was_pressed = right_grip
 
+func _update_weapon_reload() -> void:
+    var left_trigger := left_controller.is_button_pressed("trigger") or left_controller.get_float("trigger") > 0.65
+    if rifle_held and left_trigger and not left_trigger_was_pressed and rifle_ammo < 30 and rifle_reserve_ammo > 0:
+        var needed := 30 - rifle_ammo
+        var loaded := mini(needed, rifle_reserve_ammo)
+        rifle_ammo += loaded
+        rifle_reserve_ammo -= loaded
+        left_controller.trigger_haptic_pulse("haptic", 0.7, 0.7, 0.12, 0.0)
+        print("IRON VEIL: reload complete | magazine ", rifle_ammo, " | reserve ", rifle_reserve_ammo)
+    left_trigger_was_pressed = left_trigger
+
 func _update_firing() -> void:
     var pressed := right_controller.is_button_pressed("trigger")
-    if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0:
+    if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0 and rifle_ammo > 0:
         _fire_rifle()
         fire_cooldown = fire_interval
     trigger_was_pressed = pressed
 
 func _fire_rifle() -> void:
-    if rifle == null or not rifle_held:
+    if rifle == null or not rifle_held or rifle_ammo <= 0:
         return
+    rifle_ammo -= 1
     for child in rifle.get_children():
         if child.name.begins_with("MuzzleFlash_Layer_"):
             child.visible = true
@@ -405,12 +421,17 @@ func _fire_rifle() -> void:
     gun_audio.play()
     right_controller.trigger_haptic_pulse("haptic", 0.95, 0.8, 0.075, 0.0)
     var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.40)
+    for enemy in get_tree().get_nodes_in_group("tactical_enemies"):
+        if is_instance_valid(enemy) and enemy.has_method("notify_sound"):
+            enemy.notify_sound(muzzle)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
     query.collide_with_areas = true
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty():
         _spawn_bullet_impact(hit.position, hit.normal)
+        if hit.collider.has_method("apply_hit"):
+            hit.collider.apply_hit(1)
         print("IRON VEIL: hit ", hit.collider.name)
 
 func _create_muzzle_flash_png(tint: Color, brightness: float) -> Texture2D:
@@ -685,6 +706,7 @@ func _build_suburban_block() -> void:
     _build_parked_car("ParkedCar_Right_01", Vector3(3.5, 0.0, -28.0), Color(0.35, 0.16, 0.12))
     _build_parked_car("ParkedCar_Left_02", Vector3(-3.5, 0.0, -48.0), Color(0.19, 0.24, 0.20))
     _build_parked_car("ParkedCar_Right_02", Vector3(3.5, 0.0, -66.0), Color(0.28, 0.20, 0.16))
+    _spawn_tactical_enemies()
 
 
 
