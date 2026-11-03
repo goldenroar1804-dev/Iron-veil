@@ -16,6 +16,7 @@ var cover_refresh := 0.0
 static var shared_alert_position := Vector3.ZERO
 static var shared_alert_revision := 0
 var seen_alert_revision := 0
+var has_reported_contact := false
 var state: BrainState = BrainState.GUARD
 var home_position := Vector3.ZERO
 var last_known_position := Vector3.ZERO
@@ -71,16 +72,19 @@ func _physics_process(delta: float) -> void:
 
     if can_see:
         last_known_position = target.global_position
-        if state != BrainState.ENGAGE and state != BrainState.RETREAT:
+        if not has_reported_contact:
             shared_alert_position = target.global_position
             shared_alert_revision += 1
+            has_reported_contact = true
         if distance < 2.8:
             state = BrainState.RETREAT
         elif distance < 15.0:
             state = BrainState.ENGAGE
         else:
             state = BrainState.GUARD
-    elif seen_alert_revision != shared_alert_revision:
+    else:
+        has_reported_contact = false
+    if not can_see and seen_alert_revision != shared_alert_revision:
         seen_alert_revision = shared_alert_revision
         last_known_position = shared_alert_position
         investigate_timer = 4.0
