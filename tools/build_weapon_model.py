@@ -127,3 +127,41 @@ def build_hand(side, filename):
 build_rifle()
 build_hand(-1,"assets/models/hands/left_hand.glb")
 build_hand(1,"assets/models/hands/right_hand.glb")
+
+def build_house_cqb():
+    # The downloaded house is a full exterior asset. Bake a second CQB version
+    # by removing the street-facing wall faces and roof faces, so its actual
+    # rooms, stairs and authored interior remain visible and enterable.
+    source=Path("assets/models/environment/suburban_house.glb")
+    if not source.exists():
+        print("No source house found; skipping cutaway build")
+        return
+    source_scene=trimesh.load(source,force="scene")
+    bounds=source_scene.bounds
+    front_z=float(bounds[0,2])
+    roof_y=float(bounds[1,1])
+    floor_y=float(bounds[0,1])
+    cutaway=trimesh.Scene()
+    removed_faces=0
+    for index, original in enumerate(source_scene.dump(concatenate=False)):
+        if not isinstance(original,trimesh.Trimesh):
+            continue
+        mesh=original.copy()
+        centers=mesh.triangles_center
+        normals=mesh.face_normals
+        front_wall=(centers[:,2] < front_z+0.14) & (centers[:,1] > floor_y+0.22) & (centers[:,1] < roof_y-0.42)
+        roof_faces=(centers[:,1] > roof_y-0.16) & (normals[:,1] > 0.35)
+        keep=~(front_wall | roof_faces)
+        removed_faces += int((~keep).sum())
+        if keep.any():
+            mesh.update_faces(keep)
+            mesh.remove_unreferenced_vertices()
+            if len(mesh.faces)>0:
+                cutaway.add_geometry(mesh,geom_name=f"CQB_House_{index}",node_name=f"CQB_House_{index}")
+    if len(cutaway.geometry)==0:
+        raise RuntimeError("House cutaway generation removed all geometry")
+    out=Path("assets/models/environment/suburban_house_cqb.glb")
+    cutaway.export(out)
+    print(f"Created CQB cutaway {out} ({out.stat().st_size} bytes; removed {removed_faces} facade/roof faces)")
+
+build_house_cqb()
