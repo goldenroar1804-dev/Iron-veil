@@ -1,7 +1,7 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Moved the second front window pane and trim away from the central doorway so the house entrance is open; updated the graphics roadmap to prioritize imported high-quality assets rather than further primitive-only modeling.
-Code commit: cd23802c8c81360f22cc379316372f5fbf3b393b
-Documentation commit: b1a0e8184063d0097620b7f5ed9cf86e8cc2aeae
+Latest update: Replaced the plain grass lot surface with a flat generated grass-color texture using subtle mottled variation tiled across the ground; no individual blades, tufts, or raised grass geometry are created.
+Code commit: 024a4e320b0c8a99c6bc75182c37d62494169078
+Documentation commit: b040eb153bd00a2e24b31064fadf32d8ccd513f8
 
 This file is updated whenever the assistant makes a repository change.
