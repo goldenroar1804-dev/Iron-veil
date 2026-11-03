@@ -412,7 +412,8 @@ func _spawn_bullet_impact(point: Vector3, normal: Vector3) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_suburban_block() -> void:
-    _add_box("GrassLot", Vector3(40, 0.18, 82), Vector3(0, -0.16, -39), Color(0.20, 0.29, 0.17))
+    var grass_lot := _add_box("GrassLot", Vector3(40, 0.18, 82), Vector3(0, -0.16, -39), Color(0.20, 0.29, 0.17))
+    grass_lot.material_override = _grass_material()
     _add_box("AsphaltStreet", Vector3(9.0, 0.12, 82), Vector3(0, -0.045, -39), Color(0.105, 0.115, 0.12))
     _add_box("LeftSidewalk", Vector3(2.0, 0.16, 82), Vector3(-5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
     _add_box("RightSidewalk", Vector3(2.0, 0.16, 82), Vector3(5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
@@ -466,6 +467,39 @@ func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
         var local_z := randf_range(-1.5, 1.45)
         var tint := Color(0.72, 0.13, 0.09) if randf() < 0.5 else Color(0.76, 0.67, 0.43)
         _build_cqb_target("%s_RandomCQB_%02d" % [house_name, n], center + Vector3(local_x, 0, local_z), tint)
+
+
+func _grass_material() -> StandardMaterial3D:
+    # Flat color variation only: no blade meshes, particles, or raised grass.
+    var image := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+    var noise := []
+    for y in range(128):
+        var row := []
+        for x in range(128):
+            row.append(randf_range(-0.045, 0.045))
+        noise.append(row)
+    for y in range(128):
+        for x in range(128):
+            var variation := float(noise[y][x]) * 0.45
+            for oy in [-1, 0, 1]:
+                for ox in [-1, 0, 1]:
+                    variation += float(noise[posmod(y + oy, 128)][posmod(x + ox, 128)]) * 0.061
+            var base := Color(0.19, 0.29, 0.13)
+            image.set_pixel(x, y, Color(
+                clampf(base.r + variation * 0.72, 0.0, 1.0),
+                clampf(base.g + variation, 0.0, 1.0),
+                clampf(base.b + variation * 0.55, 0.0, 1.0),
+                1.0
+            ))
+    var texture := ImageTexture.create_from_image(image)
+    var mat := StandardMaterial3D.new()
+    mat.albedo_color = Color.WHITE
+    mat.albedo_texture = texture
+    mat.roughness = 1.0
+    mat.metallic = 0.0
+    mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+    mat.uv1_scale = Vector3(18.0, 36.0, 1.0)
+    return mat
 
 func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     # Enterable shell with a doorway opening and a walkable interior floor.
