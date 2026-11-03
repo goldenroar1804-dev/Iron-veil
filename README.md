@@ -5,9 +5,9 @@ Native Meta Quest tactical PvE prototype built with Godot 4 and OpenXR.
 ## Current prototype features
 - OpenXR head and controller tracking
 - Smooth thumbstick locomotion and turning
-- Grip-button rifle pickup/drop and trigger firing
-- Detailed procedural M4-style carbine, rounded VR grip glove, and CQB silhouette targets
-- Procedural suburban street block with house shells and vehicle props
+- Start-of-mission rifle pickup from a stand; grip-button pickup/drop and trigger firing
+- Detailed procedural M4-style carbine, separate tracked human-shaped hands, and randomized indoor CQB targets
+- Expanded suburban block with eight enterable house shells, parked vehicles, and static collision on architecture and vehicle props
 - Procedural sky, ambient lighting, fog, and subtle surface variation
 - Three layered transparent muzzle-flash sprite cards generated at runtime
 - CC0 rifle-shot and concrete-footstep MP3 effects downloaded and cached on first launch
@@ -34,3 +34,7 @@ This is an early prototype. The latest visual and audio changes have not been te
 
 ## Latest weapon visual pass
 The M4-style carbine is assembled from detailed lightweight meshes, including an adjustable stock, buffer tube, split receiver, ejection-port detail, quad-rail handguard, barrel, birdcage flash hider, optic, magazine, and trigger guard. The right glove uses rounded palm/finger segments positioned around the pistol grip. The muzzle effect uses three overlapping transparent flame sprites and a short light pulse. These are procedural meshes and generated sprites, not imported photogrammetry or commercial asset models.
+
+
+## Latest gameplay and collision pass
+The rifle now starts on a pickup stand and only attaches to the right controller after the player reaches it and squeezes the grip button. Both hands are independent of the rifle and follow their respective tracked controllers. Buildings, roads, sidewalks, fences, props, and parked-car bodies have static collision geometry; wheels have separate collision shapes. The map is extended along the street and each of eight houses receives one to three randomized CQB targets inside its room. Hand meshes remain procedural approximations rather than imported scanned human-hand assets; the current repository still does not bundle third-party environment model packs.
