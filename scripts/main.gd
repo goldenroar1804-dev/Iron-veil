@@ -385,11 +385,11 @@ func _spawn_bullet_impact(point: Vector3, normal: Vector3) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_suburban_block() -> void:
-    _add_box("GrassLot", Vector3(34, 0.18, 42), Vector3(0, -0.16, -16), Color(0.20, 0.29, 0.17))
-    _add_box("AsphaltStreet", Vector3(9.0, 0.12, 42), Vector3(0, -0.045, -16), Color(0.105, 0.115, 0.12))
-    _add_box("LeftSidewalk", Vector3(2.0, 0.16, 42), Vector3(-5.5, 0.0, -16), Color(0.42, 0.42, 0.39))
-    _add_box("RightSidewalk", Vector3(2.0, 0.16, 42), Vector3(5.5, 0.0, -16), Color(0.42, 0.42, 0.39))
-    for z in range(0, 42, 4):
+    _add_box("GrassLot", Vector3(40, 0.18, 82), Vector3(0, -0.16, -39), Color(0.20, 0.29, 0.17))
+    _add_box("AsphaltStreet", Vector3(9.0, 0.12, 82), Vector3(0, -0.045, -39), Color(0.105, 0.115, 0.12))
+    _add_box("LeftSidewalk", Vector3(2.0, 0.16, 82), Vector3(-5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
+    _add_box("RightSidewalk", Vector3(2.0, 0.16, 82), Vector3(5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
+    for z in range(0, 82, 4):
         _add_box("CenterRoadDash_%d" % z, Vector3(0.12, 0.012, 1.8), Vector3(0, 0.02, -float(z) - 1.0), Color(0.78, 0.73, 0.53))
 
     var sun := DirectionalLight3D.new()
@@ -398,28 +398,47 @@ func _build_suburban_block() -> void:
     add_child(sun)
 
     # Simple low-poly houses on both sides of the street.
-    _build_house("House_Left_Front", Vector3(-10.0, 0.0, -9.0), Color(0.66, 0.57, 0.45))
-    _build_house("House_Right_Front", Vector3(10.0, 0.0, -15.0), Color(0.55, 0.61, 0.63))
-    _build_house("House_Left_Back", Vector3(-10.0, 0.0, -29.0), Color(0.62, 0.63, 0.54))
-    _build_house("House_Right_Back", Vector3(10.0, 0.0, -34.0), Color(0.67, 0.55, 0.52))
+    var house_centers: Array[Vector3] = [
+        Vector3(-11, 0, -10), Vector3(11, 0, -18),
+        Vector3(-11, 0, -30), Vector3(11, 0, -38),
+        Vector3(-11, 0, -50), Vector3(11, 0, -58),
+        Vector3(-11, 0, -70), Vector3(11, 0, -76)
+    ]
+    var house_colors: Array[Color] = [
+        Color(0.66, 0.57, 0.45), Color(0.55, 0.61, 0.63),
+        Color(0.62, 0.63, 0.54), Color(0.67, 0.55, 0.52),
+        Color(0.58, 0.60, 0.65), Color(0.68, 0.62, 0.49),
+        Color(0.54, 0.61, 0.53), Color(0.64, 0.57, 0.55)
+    ]
+    for i in range(house_centers.size()):
+        var house_name := "House_%02d" % i
+        _build_house(house_name, house_centers[i], house_colors[i])
+        _spawn_random_house_targets(house_name, house_centers[i])
 
     # Low privacy fences, gates, hedges and street furniture make cover lanes.
     for side in [-1.0, 1.0]:
-        for i in range(5):
-            var zpos := -5.0 - float(i) * 6.0
+        for i in range(10):
+            var zpos := -5.0 - float(i) * 7.5
             _add_box("Fence_%s_%d" % [str(side), i], Vector3(0.12, 1.05, 4.0), Vector3(side * 7.2, 0.55, zpos), Color(0.31, 0.23, 0.16))
             _add_box("Hedge_%s_%d" % [str(side), i], Vector3(1.0, 0.85, 2.4), Vector3(side * 7.8, 0.45, zpos - 2.1), Color(0.12, 0.25, 0.13))
         _add_streetlight(side * 5.0, -12.0)
         _add_streetlight(side * 5.0, -30.0)
 
-    _build_parked_car("ParkedCar_Left", Vector3(-3.5, 0.0, -17.0), Color(0.22, 0.27, 0.31))
-    _build_parked_car("ParkedCar_Right", Vector3(3.5, 0.0, -28.0), Color(0.35, 0.16, 0.12))
+    _build_parked_car("ParkedCar_Left_01", Vector3(-3.5, 0.0, -17.0), Color(0.22, 0.27, 0.31))
+    _build_parked_car("ParkedCar_Right_01", Vector3(3.5, 0.0, -28.0), Color(0.35, 0.16, 0.12))
+    _build_parked_car("ParkedCar_Left_02", Vector3(-3.5, 0.0, -48.0), Color(0.19, 0.24, 0.20))
+    _build_parked_car("ParkedCar_Right_02", Vector3(3.5, 0.0, -66.0), Color(0.28, 0.20, 0.16))
 
-    # CQB silhouette targets in staggered lanes, with separate physics hitboxes.
-    _build_cqb_target("CQB_Target_01", Vector3(-1.6, 0.0, -9.0), Color(0.72, 0.13, 0.09))
-    _build_cqb_target("CQB_Target_02", Vector3(1.7, 0.0, -13.0), Color(0.76, 0.67, 0.43))
-    _build_cqb_target("CQB_Target_03", Vector3(-2.0, 0.0, -23.0), Color(0.72, 0.13, 0.09))
-    _build_cqb_target("CQB_Target_04", Vector3(2.0, 0.0, -36.0), Color(0.76, 0.67, 0.43))
+
+
+func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
+    # Each house receives a randomized number and arrangement of indoor CQB targets.
+    var count := randi_range(1, 3)
+    for n in range(count):
+        var local_x := randf_range(-2.2, 2.2)
+        var local_z := randf_range(-1.5, 1.45)
+        var tint := Color(0.72, 0.13, 0.09) if randf() < 0.5 else Color(0.76, 0.67, 0.43)
+        _build_cqb_target("%s_RandomCQB_%02d" % [house_name, n], center + Vector3(local_x, 0, local_z), tint)
 
 func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     # Enterable shell with a doorway opening and a walkable interior floor.
@@ -510,6 +529,16 @@ func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color
     box.position = location
     box.material_override = _material(tint)
     add_child(box)
+    # Every static architectural/vehicle box receives a matching physics collider.
+    var body := StaticBody3D.new()
+    body.name = label + "_Collider"
+    body.position = location
+    var collision := CollisionShape3D.new()
+    var shape := BoxShape3D.new()
+    shape.size = dimensions
+    collision.shape = shape
+    body.add_child(collision)
+    add_child(body)
     return box
 
 func _setup_visual_quality() -> void:
