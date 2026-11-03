@@ -525,8 +525,8 @@ func _build_suburban_block() -> void:
     for side in [-1.0, 1.0]:
         for i in range(10):
             var zpos := -5.0 - float(i) * 7.5
-            _add_box("Fence_%s_%d" % [str(side), i], Vector3(0.12, 1.05, 4.0), Vector3(side * 7.2, 0.55, zpos), Color(0.31, 0.23, 0.16))
-            _add_box("Hedge_%s_%d" % [str(side), i], Vector3(1.0, 0.85, 2.4), Vector3(side * 7.8, 0.45, zpos - 2.1), Color(0.12, 0.25, 0.13))
+            _build_fence_segment("Fence_%s_%d" % [str(side), i], side * 7.2, zpos)
+            _build_hedge("Hedge_%s_%d" % [str(side), i], Vector3(side * 7.8, 0.45, zpos - 2.1))
         _add_streetlight(side * 5.0, -12.0)
         _add_streetlight(side * 5.0, -30.0)
 
@@ -626,10 +626,70 @@ func _build_parked_car(label: String, center: Vector3, body_color: Color) -> voi
     # Visual-only replacement: keep the original car and wheel colliders.
     _install_environment_model(label, center, "res://assets/models/environment/sedan.glb", Vector3.ONE)
 
+func _build_fence_segment(label: String, x: float, z: float) -> void:
+    var wood := Color(0.27, 0.19, 0.12)
+    # Separate square-cut posts, rails and narrow vertical pickets replace the
+    # single solid wall; the rails/posts retain simple physics colliders.
+    for offset in [-2.0, 0.0, 2.0]:
+        _add_box(label + "_Post", Vector3(0.14, 1.12, 0.14), Vector3(x, 0.56, z + offset), wood)
+    for y in [0.28, 0.82]:
+        _add_box(label + "_Rail", Vector3(0.10, 0.10, 4.0), Vector3(x, y, z), Color(0.34, 0.25, 0.17))
+    for plank in range(15):
+        var plank_z := z - 1.86 + float(plank) * 0.265
+        _add_box(label + "_Picket_%02d" % plank, Vector3(0.075, 0.88, 0.19), Vector3(x, 0.56, plank_z), wood)
+
+func _build_hedge(label: String, center: Vector3) -> void:
+    # Keep one invisible broad collider for movement while rendering a varied,
+    # rounded foliage mass rather than a rectangular green block.
+    var collider_visual := _add_box(label + "_CollisionVisual", Vector3(1.0, 0.85, 2.4), center, Color(0.12, 0.25, 0.13))
+    collider_visual.visible = false
+    for row in range(2):
+        for col in range(5):
+            var leaf := MeshInstance3D.new()
+            leaf.name = label + "_Leaf_%d_%d" % [row, col]
+            var sphere := SphereMesh.new()
+            sphere.radius = 0.34 + randf_range(-0.035, 0.035)
+            sphere.height = sphere.radius * 2.0
+            sphere.radial_segments = 12
+            sphere.rings = 8
+            leaf.mesh = sphere
+            leaf.position = center + Vector3(randf_range(-0.12, 0.12), 0.27 + float(row) * 0.34, -0.92 + float(col) * 0.46)
+            leaf.scale = Vector3(1.0, 0.82, 1.05)
+            leaf.material_override = _material(Color(0.09 + randf_range(0,0.035), 0.19 + randf_range(0,0.07), 0.075))
+            add_child(leaf)
+
+func _add_round_primitive(label: String, radius: float, length: float, center: Vector3, tint: Color, axis: Vector3 = Vector3.UP) -> void:
+    var visual := MeshInstance3D.new()
+    visual.name = label
+    var cylinder := CylinderMesh.new()
+    cylinder.top_radius = radius
+    cylinder.bottom_radius = radius
+    cylinder.height = length
+    cylinder.radial_segments = 16
+    visual.mesh = cylinder
+    visual.position = center
+    visual.material_override = _material(tint)
+    visual.quaternion = Quaternion(Vector3.UP, axis.normalized())
+    add_child(visual)
+    var body := StaticBody3D.new()
+    body.name = label + "_Collider"
+    body.position = center
+    var shape := CollisionShape3D.new()
+    var cylinder_shape := CylinderShape3D.new()
+    cylinder_shape.radius = radius
+    cylinder_shape.height = length
+    shape.shape = cylinder_shape
+    body.quaternion = visual.quaternion
+    body.add_child(shape)
+    add_child(body)
+
 func _add_streetlight(x: float, z: float) -> void:
-    _add_box("StreetlightPole", Vector3(0.10, 4.4, 0.10), Vector3(x, 2.2, z), Color(0.16, 0.17, 0.16))
-    _add_box("StreetlightArm", Vector3(0.75, 0.08, 0.08), Vector3(x + (0.32 if x < 0 else -0.32), 4.25, z), Color(0.16, 0.17, 0.16))
-    _add_box("StreetlightHead", Vector3(0.30, 0.10, 0.20), Vector3(x + (0.68 if x < 0 else -0.68), 4.18, z), Color(0.78, 0.72, 0.53))
+    var pole_color := Color(0.12, 0.14, 0.14)
+    var arm_x := 0.68 if x < 0 else -0.68
+    _add_round_primitive("StreetlightPole", 0.055, 4.4, Vector3(x, 2.2, z), pole_color)
+    _add_round_primitive("StreetlightArm", 0.045, 0.82, Vector3(x + arm_x * 0.5, 4.20, z), pole_color, Vector3(1, 0, 0))
+    _add_box("StreetlightLuminaireHousing", Vector3(0.34, 0.09, 0.22), Vector3(x + arm_x, 4.16, z), Color(0.20, 0.22, 0.20))
+    _add_box("StreetlightDiffuser", Vector3(0.27, 0.018, 0.16), Vector3(x + arm_x, 4.105, z), Color(0.88, 0.82, 0.64))
 
 func _build_cqb_target(label: String, ground_position: Vector3, target_color: Color) -> void:
     var target := Node3D.new()
@@ -659,9 +719,25 @@ func _build_cqb_target(label: String, ground_position: Vector3, target_color: Co
 func _target_piece(parent: Node3D, label: String, dimensions: Vector3, location: Vector3, tint: Color) -> void:
     var piece := MeshInstance3D.new()
     piece.name = label
-    var mesh := BoxMesh.new()
-    mesh.size = dimensions
-    piece.mesh = mesh
+    if label == "Head":
+        var head := SphereMesh.new()
+        head.radius = dimensions.x * 0.5
+        head.height = dimensions.y
+        head.radial_segments = 16
+        head.rings = 10
+        piece.mesh = head
+    elif label == "ChestScoringZone" or label == "HeadScoringZone":
+        var scoring := BoxMesh.new()
+        scoring.size = dimensions
+        piece.mesh = scoring
+    else:
+        var body_mesh := CapsuleMesh.new()
+        body_mesh.radius = dimensions.x * 0.5
+        body_mesh.height = dimensions.y
+        body_mesh.radial_segments = 12
+        body_mesh.rings = 6
+        piece.mesh = body_mesh
+        piece.scale.z = dimensions.z / dimensions.x
     piece.position = location
     piece.material_override = _material(tint)
     parent.add_child(piece)
