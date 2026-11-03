@@ -25,9 +25,13 @@ var muzzle_flash: MeshInstance3D
 var muzzle_light: OmniLight3D
 var gun_audio: AudioStreamPlayer3D
 var footstep_audio: AudioStreamPlayer3D
+var gun_download: HTTPRequest
+var step_download: HTTPRequest
+var detail_texture: ImageTexture
 
 func _ready() -> void:
     _start_openxr()
+    _setup_visual_quality()
     _build_suburban_block()
     _build_hands()
     _build_rifle()
@@ -156,13 +160,20 @@ func _build_rifle() -> void:
     # The tracked left glove is the support hand; no duplicate static hand is drawn.
 
     muzzle_flash = MeshInstance3D.new()
-    muzzle_flash.name = "MuzzleFlash"
-    var flash_mesh := SphereMesh.new()
-    flash_mesh.radius = 0.075
-    flash_mesh.height = 0.15
+    muzzle_flash.name = "MuzzleFlash_PNG_Sprite"
+    var flash_mesh := QuadMesh.new()
+    flash_mesh.size = Vector2(0.34, 0.16)
     muzzle_flash.mesh = flash_mesh
-    muzzle_flash.position = Vector3(0, 0.012, -1.22)
-    muzzle_flash.material_override = _material(Color(1.0, 0.58, 0.12))
+    muzzle_flash.position = Vector3(0, 0.012, -1.24)
+    var flash_material := StandardMaterial3D.new()
+    flash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+    flash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    flash_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+    flash_material.albedo_texture = _create_muzzle_flash_png()
+    flash_material.emission_enabled = true
+    flash_material.emission = Color(1.0, 0.48, 0.08)
+    flash_material.emission_energy_multiplier = 2.0
+    muzzle_flash.material_override = flash_material
     muzzle_flash.visible = false
     rifle.add_child(muzzle_flash)
     muzzle_light = OmniLight3D.new()
@@ -238,38 +249,80 @@ func _fire_rifle() -> void:
         _spawn_bullet_impact(hit.position, hit.normal)
         print("IRON VEIL: hit ", hit.collider.name)
 
+func _create_muzzle_flash_png() -> Texture2D:
+    # Generate a transparent flame-shaped PNG locally so the effect is a sprite,
+    # not a glowing sphere. It is written into the app's user data folder.
+    var image := Image.create(128, 64, false, Image.FORMAT_RGBA8)
+    for y in range(64):
+        for x in range(128):
+            var nx := float(x) / 127.0
+            var ny := absf((float(y) - 31.5) / 31.5)
+            var core_width := 0.10 + 0.70 * pow(1.0 - nx, 0.62)
+            var edge := ny / core_width
+            var alpha := clampf((1.0 - edge) * 1.7, 0.0, 1.0) * clampf((1.0 - nx) * 1.6, 0.0, 1.0)
+            var color := Color(1.0, 0.26 + 0.55 * (1.0 - nx), 0.035, alpha)
+            if edge < 0.35:
+                color = Color(1.0, 0.92, 0.55, alpha)
+            image.set_pixel(x, y, color)
+    image.save_png("user://iron_veil_muzzle_flash.png")
+    return ImageTexture.create_from_image(image)
+
 func _build_audio() -> void:
     gun_audio = AudioStreamPlayer3D.new()
     gun_audio.name = "GunshotAudio"
-    gun_audio.stream = _make_audio_stream(true)
-    gun_audio.volume_db = -4.0
-    gun_audio.max_distance = 45.0
+    gun_audio.volume_db = -2.0
+    gun_audio.max_distance = 65.0
+    gun_audio.unit_size = 18.0
     add_child(gun_audio)
+
     footstep_audio = AudioStreamPlayer3D.new()
     footstep_audio.name = "FootstepAudio"
-    footstep_audio.stream = _make_audio_stream(false)
-    footstep_audio.volume_db = -8.0
-    footstep_audio.max_distance = 12.0
+    footstep_audio.volume_db = -7.0
+    footstep_audio.max_distance = 18.0
+    footstep_audio.unit_size = 7.0
     add_child(footstep_audio)
 
-func _make_audio_stream(gunshot: bool) -> AudioStreamWAV:
-    var rate := 22050
-    var frames := int(rate * (0.32 if gunshot else 0.15))
-    var pcm := PackedByteArray()
-    pcm.resize(frames * 2)
-    for i in range(frames):
-        var t := float(i) / float(rate)
-        var envelope := exp(-t * (10.0 if gunshot else 25.0))
-        var wave := (randf_range(-1.0, 1.0) * 0.75 + sin(t * TAU * 75.0) * 0.25) * envelope
-        if not gunshot:
-            wave = (sin(t * TAU * 90.0) * 0.7 + randf_range(-1.0, 1.0) * 0.3) * envelope
-        pcm.encode_s16(i * 2, int(clampf(wave, -1.0, 1.0) * 26000.0))
-    var stream := AudioStreamWAV.new()
-    stream.format = AudioStreamWAV.FORMAT_16_BITS
-    stream.mix_rate = rate
-    stream.stereo = false
-    stream.data = pcm
-    return stream
+    # CC0 audio downloads are cached locally after the first successful fetch.
+    gun_download = HTTPRequest.new()
+    gun_download.name = "CC0_Rifle_Sound_Download"
+    add_child(gun_download)
+    gun_download.request_completed.connect(_on_gun_sound_downloaded)
+    step_download = HTTPRequest.new()
+    step_download.name = "CC0_Footstep_Sound_Download"
+    add_child(step_download)
+    step_download.request_completed.connect(_on_footstep_sound_downloaded)
+    _load_or_download_sound("user://iron_veil_rifle.mp3", "https://sfxmint.com/dl/impact-gunshot-08.mp3", gun_download)
+    _load_or_download_sound("user://iron_veil_steps.mp3", "https://sfxmint.com/dl/footsteps-concrete-75.mp3", step_download)
+
+func _load_or_download_sound(cache_path: String, url: String, request_node: HTTPRequest) -> void:
+    if FileAccess.file_exists(cache_path):
+        var file := FileAccess.open(cache_path, FileAccess.READ)
+        if file:
+            var stream := AudioStreamMP3.load_from_buffer(file.get_buffer(file.get_length()))
+            if request_node == gun_download:
+                gun_audio.stream = stream
+            else:
+                footstep_audio.stream = stream
+            return
+    request_node.request(url)
+
+func _on_gun_sound_downloaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+    if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and body.size() > 1000:
+        var file := FileAccess.open("user://iron_veil_rifle.mp3", FileAccess.WRITE)
+        if file:
+            file.store_buffer(body)
+        gun_audio.stream = AudioStreamMP3.load_from_buffer(body)
+    else:
+        push_warning("IRON VEIL: CC0 rifle audio download failed; no recorded rifle sound loaded.")
+
+func _on_footstep_sound_downloaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+    if result == HTTPRequest.RESULT_SUCCESS and response_code == 200 and body.size() > 500:
+        var file := FileAccess.open("user://iron_veil_steps.mp3", FileAccess.WRITE)
+        if file:
+            file.store_buffer(body)
+        footstep_audio.stream = AudioStreamMP3.load_from_buffer(body)
+    else:
+        push_warning("IRON VEIL: CC0 footstep audio download failed; no recorded footstep sound loaded.")
 
 func _update_footsteps() -> void:
     var stick: Vector2 = left_controller.get_vector2("primary")
@@ -423,8 +476,36 @@ func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color
     add_child(box)
     return box
 
+func _setup_visual_quality() -> void:
+    var environment := Environment.new()
+    environment.background_mode = Environment.BG_SKY
+    var sky := Sky.new()
+    sky.sky_material = ProceduralSkyMaterial.new()
+    environment.sky = sky
+    environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+    environment.ambient_light_energy = 0.7
+    environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    environment.fog_enabled = true
+    environment.fog_light_color = Color(0.57, 0.64, 0.68)
+    environment.fog_density = 0.0018
+    var world := WorldEnvironment.new()
+    world.name = "SuburbanWorldEnvironment"
+    world.environment = environment
+    add_child(world)
+
+    # Small seamless noise tile adds subtle surface variation without large textures.
+    var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+    for y in range(64):
+        for x in range(64):
+            var value := randf_range(0.91, 1.0)
+            image.set_pixel(x, y, Color(value, value, value, 1.0))
+    detail_texture = ImageTexture.create_from_image(image)
+
 func _material(tint: Color) -> StandardMaterial3D:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = tint
-    mat.roughness = 0.9
+    mat.albedo_texture = detail_texture
+    mat.roughness = 0.82
+    mat.metallic = 0.04
+    mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
     return mat
