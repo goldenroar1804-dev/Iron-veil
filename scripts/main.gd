@@ -169,44 +169,53 @@ func _build_rifle() -> void:
     _add_box("WeaponPickupStand_LegA", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(-0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
     _add_box("WeaponPickupStand_LegB", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
 
-    var black := Color(0.045, 0.052, 0.048)
-    var receiver := Color(0.105, 0.115, 0.105)
-    var polymer := Color(0.15, 0.16, 0.14)
-    var steel := Color(0.23, 0.24, 0.22)
-    var glass := Color(0.025, 0.075, 0.065)
+    # Prefer a real imported GLB when one is installed; retain the Quest-friendly
+    # procedural rifle as a fallback so the project remains runnable out of the box.
+    var has_imported_rifle := _try_add_imported_model(
+        rifle,
+        "res://assets/models/weapons/m4_carbine.glb",
+        "ImportedM4Carbine"
+    )
+    if not has_imported_rifle:
+        var black := Color(0.045, 0.052, 0.048)
+        var receiver := Color(0.105, 0.115, 0.105)
+        var polymer := Color(0.15, 0.16, 0.14)
+        var steel := Color(0.23, 0.24, 0.22)
+        var glass := Color(0.025, 0.075, 0.065)
 
-    # M4-style silhouette: adjustable stock, buffer tube, split receiver,
-    # curved magazine, quad-rail handguard, front sight and muzzle device.
-    _add_weapon_cylinder(rifle, "BufferTube", 0.027, 0.23, Vector3(0, 0.0, 0.19), steel)
-    _add_weapon_box(rifle, "AdjustableStock", Vector3(0.105, 0.14, 0.26), Vector3(0, -0.005, 0.31), polymer)
-    _add_weapon_box(rifle, "RubberButtPad", Vector3(0.11, 0.15, 0.025), Vector3(0, -0.005, 0.445), black)
-    _add_weapon_box(rifle, "LowerReceiver", Vector3(0.105, 0.13, 0.24), Vector3(0, -0.075, -0.13), receiver)
-    _add_weapon_box(rifle, "UpperReceiver", Vector3(0.105, 0.095, 0.34), Vector3(0, 0.015, -0.20), steel)
-    _add_weapon_box(rifle, "EjectionPort", Vector3(0.008, 0.042, 0.105), Vector3(0.056, -0.005, -0.19), black)
-    _add_weapon_box(rifle, "ForwardAssist", Vector3(0.025, 0.035, 0.035), Vector3(0.06, 0.035, -0.31), black)
-    _add_weapon_box(rifle, "QuadRailHandguard", Vector3(0.115, 0.12, 0.37), Vector3(0, 0.01, -0.53), polymer)
-    _add_weapon_cylinder(rifle, "OuterBarrel", 0.018, 0.58, Vector3(0, 0.01, -0.99), black)
-    _add_weapon_cylinder(rifle, "FrontBarrelCollar", 0.027, 0.045, Vector3(0, 0.01, -0.78), steel)
-    _add_weapon_cylinder(rifle, "A2BirdcageFlashHider", 0.026, 0.075, Vector3(0, 0.01, -1.30), steel)
-    _add_weapon_box(rifle, "TopPicatinnyRail", Vector3(0.045, 0.025, 0.76), Vector3(0, 0.08, -0.50), black)
-    _add_weapon_box(rifle, "CarryHandleOpticMount", Vector3(0.09, 0.06, 0.13), Vector3(0, 0.13, -0.28), black)
-    _add_weapon_box(rifle, "RedDotOptic", Vector3(0.075, 0.085, 0.12), Vector3(0, 0.19, -0.29), black)
-    _add_weapon_box(rifle, "OpticLens", Vector3(0.065, 0.062, 0.006), Vector3(0, 0.19, -0.354), glass)
-    _add_weapon_box(rifle, "FrontSightPost", Vector3(0.022, 0.075, 0.025), Vector3(0, 0.13, -0.69), steel)
-    _add_weapon_box(rifle, "FrontSightWings", Vector3(0.10, 0.018, 0.025), Vector3(0, 0.12, -0.69), steel)
-    _add_weapon_box(rifle, "PistolGrip", Vector3(0.065, 0.18, 0.09), Vector3(0, -0.19, -0.09), black)
-    _add_weapon_box(rifle, "TriggerGuard", Vector3(0.075, 0.018, 0.095), Vector3(0, -0.155, -0.11), steel)
-    _add_weapon_box(rifle, "Trigger", Vector3(0.012, 0.045, 0.018), Vector3(0, -0.15, -0.12), steel)
-    _add_weapon_box(rifle, "MagazineWell", Vector3(0.09, 0.07, 0.11), Vector3(0, -0.15, -0.19), black)
-    _add_weapon_box(rifle, "STANAGMagazine", Vector3(0.075, 0.25, 0.105), Vector3(0, -0.29, -0.20), black)
-    _add_weapon_box(rifle, "MagazineFloorplate", Vector3(0.08, 0.025, 0.11), Vector3(0, -0.425, -0.20), steel)
-    # Rail slots and fasteners add detail without high-cost geometry.
-    for i in range(8):
-        var z := -0.39 - float(i) * 0.039
-        _add_weapon_box(rifle, "RailSlot_%d" % i, Vector3(0.122, 0.012, 0.012), Vector3(0, 0.075, z), black)
-    for side in [-1.0, 1.0]:
-        _add_weapon_box(rifle, "SideRail_%s" % side, Vector3(0.018, 0.045, 0.27), Vector3(side * 0.064, 0.01, -0.53), black)
-        _add_weapon_box(rifle, "HandStop_%s" % side, Vector3(0.035, 0.06, 0.045), Vector3(side * 0.073, -0.01, -0.64), steel)
+        # M4-style silhouette: adjustable stock, buffer tube, split receiver,
+        # curved magazine, quad-rail handguard, front sight and muzzle device.
+        _add_weapon_cylinder(rifle, "BufferTube", 0.027, 0.23, Vector3(0, 0.0, 0.19), steel)
+        _add_weapon_box(rifle, "AdjustableStock", Vector3(0.105, 0.14, 0.26), Vector3(0, -0.005, 0.31), polymer)
+        _add_weapon_box(rifle, "RubberButtPad", Vector3(0.11, 0.15, 0.025), Vector3(0, -0.005, 0.445), black)
+        _add_weapon_box(rifle, "LowerReceiver", Vector3(0.105, 0.13, 0.24), Vector3(0, -0.075, -0.13), receiver)
+        _add_weapon_box(rifle, "UpperReceiver", Vector3(0.105, 0.095, 0.34), Vector3(0, 0.015, -0.20), steel)
+        _add_weapon_box(rifle, "EjectionPort", Vector3(0.008, 0.042, 0.105), Vector3(0.056, -0.005, -0.19), black)
+        _add_weapon_box(rifle, "ForwardAssist", Vector3(0.025, 0.035, 0.035), Vector3(0.06, 0.035, -0.31), black)
+        _add_weapon_box(rifle, "QuadRailHandguard", Vector3(0.115, 0.12, 0.37), Vector3(0, 0.01, -0.53), polymer)
+        _add_weapon_cylinder(rifle, "OuterBarrel", 0.018, 0.58, Vector3(0, 0.01, -0.99), black)
+        _add_weapon_cylinder(rifle, "FrontBarrelCollar", 0.027, 0.045, Vector3(0, 0.01, -0.78), steel)
+        _add_weapon_cylinder(rifle, "A2BirdcageFlashHider", 0.026, 0.075, Vector3(0, 0.01, -1.30), steel)
+        _add_weapon_box(rifle, "TopPicatinnyRail", Vector3(0.045, 0.025, 0.76), Vector3(0, 0.08, -0.50), black)
+        _add_weapon_box(rifle, "CarryHandleOpticMount", Vector3(0.09, 0.06, 0.13), Vector3(0, 0.13, -0.28), black)
+        _add_weapon_box(rifle, "RedDotOptic", Vector3(0.075, 0.085, 0.12), Vector3(0, 0.19, -0.29), black)
+        _add_weapon_box(rifle, "OpticLens", Vector3(0.065, 0.062, 0.006), Vector3(0, 0.19, -0.354), glass)
+        _add_weapon_box(rifle, "FrontSightPost", Vector3(0.022, 0.075, 0.025), Vector3(0, 0.13, -0.69), steel)
+        _add_weapon_box(rifle, "FrontSightWings", Vector3(0.10, 0.018, 0.025), Vector3(0, 0.12, -0.69), steel)
+        _add_weapon_box(rifle, "PistolGrip", Vector3(0.065, 0.18, 0.09), Vector3(0, -0.19, -0.09), black)
+        _add_weapon_box(rifle, "TriggerGuard", Vector3(0.075, 0.018, 0.095), Vector3(0, -0.155, -0.11), steel)
+        _add_weapon_box(rifle, "Trigger", Vector3(0.012, 0.045, 0.018), Vector3(0, -0.15, -0.12), steel)
+        _add_weapon_box(rifle, "MagazineWell", Vector3(0.09, 0.07, 0.11), Vector3(0, -0.15, -0.19), black)
+        _add_weapon_box(rifle, "STANAGMagazine", Vector3(0.075, 0.25, 0.105), Vector3(0, -0.29, -0.20), black)
+        _add_weapon_box(rifle, "MagazineFloorplate", Vector3(0.08, 0.025, 0.11), Vector3(0, -0.425, -0.20), steel)
+        # Rail slots and fasteners add detail without high-cost geometry.
+        for i in range(8):
+            var z := -0.39 - float(i) * 0.039
+            _add_weapon_box(rifle, "RailSlot_%d" % i, Vector3(0.122, 0.012, 0.012), Vector3(0, 0.075, z), black)
+        for side in [-1.0, 1.0]:
+            _add_weapon_box(rifle, "SideRail_%s" % side, Vector3(0.018, 0.045, 0.27), Vector3(side * 0.064, 0.01, -0.53), black)
+            _add_weapon_box(rifle, "HandStop_%s" % side, Vector3(0.035, 0.06, 0.045), Vector3(side * 0.073, -0.01, -0.64), steel)
+
 
     # Three offset, crossed transparent flame cards create a broad layered burst
     # directly at the muzzle rather than a thin line.
@@ -354,8 +363,49 @@ func _build_audio() -> void:
     step_download.name = "CC0_Footstep_Sound_Download"
     add_child(step_download)
     step_download.request_completed.connect(_on_footstep_sound_downloaded)
-    _load_or_download_sound("user://iron_veil_rifle.mp3", "https://sfxmint.com/dl/impact-gunshot-08.mp3", gun_download)
-    _load_or_download_sound("user://iron_veil_steps.mp3", "https://sfxmint.com/dl/footsteps-concrete-75.mp3", step_download)
+    # Bundled/imported Godot audio takes priority. Network downloads remain a
+    # fallback for the original prototype and are cached in user:// as before.
+    var local_rifle_audio := _load_local_audio([
+        "res://assets/audio/rifle_shot.ogg",
+        "res://assets/audio/rifle_shot.wav",
+        "res://assets/audio/rifle_shot.mp3"
+    ])
+    var local_footstep_audio := _load_local_audio([
+        "res://assets/audio/footsteps_concrete.ogg",
+        "res://assets/audio/footsteps_concrete.wav",
+        "res://assets/audio/footsteps_concrete.mp3"
+    ])
+    if local_rifle_audio != null:
+        gun_audio.stream = local_rifle_audio
+    else:
+        _load_or_download_sound("user://iron_veil_rifle.mp3", "https://sfxmint.com/dl/impact-gunshot-08.mp3", gun_download)
+    if local_footstep_audio != null:
+        footstep_audio.stream = local_footstep_audio
+    else:
+        _load_or_download_sound("user://iron_veil_steps.mp3", "https://sfxmint.com/dl/footsteps-concrete-75.mp3", step_download)
+
+func _load_local_audio(paths: Array[String]) -> AudioStream:
+    for path in paths:
+        if ResourceLoader.exists(path):
+            var stream := ResourceLoader.load(path) as AudioStream
+            if stream != null:
+                print("IRON VEIL: loaded bundled audio: ", path)
+                return stream
+            push_warning("IRON VEIL: audio asset could not be loaded: " + path)
+    return null
+
+func _try_add_imported_model(parent: Node3D, path: String, instance_name: String) -> bool:
+    if not ResourceLoader.exists(path):
+        return false
+    var packed_scene := ResourceLoader.load(path) as PackedScene
+    if packed_scene == null:
+        push_warning("IRON VEIL: imported model is not a PackedScene: " + path)
+        return false
+    var model := packed_scene.instantiate()
+    model.name = instance_name
+    parent.add_child(model)
+    print("IRON VEIL: loaded imported model: ", path)
+    return true
 
 func _load_or_download_sound(cache_path: String, url: String, request_node: HTTPRequest) -> void:
     if FileAccess.file_exists(cache_path):
