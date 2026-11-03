@@ -749,6 +749,7 @@ func _spawn_tactical_enemies() -> void:
         enemy.position = enemy_positions[i]
         enemy.set_script(enemy_script)
         enemy.set("aggression", randf_range(0.35, 0.95))
+        enemy.set("move_speed", randf_range(0.9, 1.45))
         var collision := CollisionShape3D.new()
         var capsule := CapsuleShape3D.new()
         capsule.radius = 0.30
