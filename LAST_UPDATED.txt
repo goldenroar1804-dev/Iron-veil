@@ -1,11 +1,10 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-03
-Latest update: Added optional imported GLB visual overrides for left/right tracked hands, suburban houses, and parked sedans. Environment replacements hide only procedural render meshes while retaining all original StaticBody3D and CollisionShape3D colliders. Updated the asset import guide with target dimensions, orientation, fallback behavior, and import checks. Existing M4 GLB and local-audio support remain available.
+Latest update: Bundled detailed suburban house and sedan GLB assets, a detailed M4-style carbine GLB, and mirrored tactical-glove hand GLBs. Replaced blocky fence slabs with individual posts/rails/pickets, rendered hedges as rounded foliage clusters while retaining a broad movement collider, changed streetlight poles/arms to cylindrical geometry, and changed target silhouettes to rounded meshes. Added a reproducible Trimesh asset builder and an Actions workflow that validates and commits the generated models. Environment model replacements remain visual-only; original gameplay colliders are preserved.
 
-Code commit: 3b8b2bf71f1f336cf2ad6d86a7c61a26d41c8c32
-Asset guide commit: 4f15d62f83f69c66f24aa251eb490e5663910f34
-Documentation commit: 1c1f634f192bd5f19c15678c3453238bd3671376
+Latest code commit: f747570bb16f43b6ddd8f6c6d7a479e6a2201381
+Latest asset commit: bb43ad5a671ea487e2d0ca70c5c67412d89b0043
+Asset builder: tools/build_weapon_model.py
+Asset workflow run: 41734136698 (success)
 
-No third-party model files have been bundled. Godot editor import, static parsing, and physical Quest 3 testing have not been run in this environment. Imported GLB assets still need scale/orientation validation in the headset.
-
-This file is updated whenever the assistant makes a repository change.
+Godot editor import, static parsing, and physical Quest 3 testing have not been run in this environment. Imported GLB scale/orientation and hand pose still need in-headset validation.
