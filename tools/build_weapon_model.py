@@ -1,144 +1,129 @@
 #!/usr/bin/env python3
-"""Build the bundled, detailed M4-style training prop as a Godot-importable GLB."""
+"""Generate Quest-friendly, rounded PBR GLB visuals for IRON VEIL."""
 from pathlib import Path
+import numpy as np
 import trimesh
 from trimesh.visual.material import PBRMaterial
 from trimesh.visual.texture import TextureVisuals
 
-out = Path("assets/models/weapons/m4_carbine.glb")
-out.parent.mkdir(parents=True, exist_ok=True)
-scene = trimesh.Scene()
-
-def material(name, rgb, metallic=0.0, roughness=0.7):
+def mat(name, rgb, metallic=0.0, roughness=0.7):
     return PBRMaterial(name=name, baseColorFactor=[*rgb, 255],
                        metallicFactor=metallic, roughnessFactor=roughness)
 
-polymer = material("Black polymer", (27, 31, 28), 0.03, 0.84)
-steel = material("Anodized steel", (67, 72, 68), 0.72, 0.38)
-rubber = material("Rubber", (12, 14, 13), 0.0, 0.96)
-glass = material("Optic glass", (24, 83, 78), 0.5, 0.18)
-brass = material("Hardware", (116, 95, 58), 0.7, 0.4)
+polymer = mat("Matte black polymer", (30, 34, 31), 0.02, 0.86)
+steel = mat("Dark anodized metal", (72, 78, 75), 0.68, 0.42)
+rubber = mat("Textured rubber", (17, 20, 18), 0.0, 0.96)
+glass = mat("Optic coated glass", (26, 91, 84), 0.55, 0.2)
+brass = mat("Muted hardware", (126, 105, 65), 0.62, 0.45)
+fabric = mat("Olive tactical fabric", (53, 62, 46), 0.0, 0.94)
+armor = mat("Glove reinforcement", (78, 82, 64), 0.02, 0.88)
 
-def add(mesh, name, mat):
-    mesh.visual = TextureVisuals(material=mat)
+def put(scene, mesh, name, material):
+    mesh.visual = TextureVisuals(material=material)
     scene.add_geometry(mesh, geom_name=name, node_name=name)
 
-def box(name, size, pos, mat):
-    # Beveled convex hulls remove the sharp, toy-like cube silhouette from
-    # receivers, stock, optic housing, magazine, and accessory housings.
-    size = __import__("numpy").array(size, dtype=float)
-    radius = max(0.0015, float(size.min()) * 0.16)
-    core = __import__("numpy").maximum(size - radius * 2.0, radius * 0.35)
-    corner_clouds = []
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            for sz in (-1, 1):
-                sphere = trimesh.creation.icosphere(subdivisions=2, radius=radius)
-                sphere.apply_translation((sx * core[0] * 0.5, sy * core[1] * 0.5, sz * core[2] * 0.5))
-                corner_clouds.append(sphere)
-    mesh = trimesh.util.concatenate(corner_clouds).convex_hull
+def rounded_box(scene, name, size, pos, material, soften=2):
+    mesh = trimesh.creation.box(extents=size)
+    for _ in range(soften):
+        vertices, faces = trimesh.remesh.subdivide(mesh.vertices, mesh.faces)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    trimesh.smoothing.filter_taubin(mesh, lamb=0.42, nu=-0.45, iterations=3)
     mesh.apply_translation(pos)
-    add(mesh, name, mat)
+    put(scene, mesh, name, material)
 
-def cylinder(name, radius, length, pos, axis, mat, sections=32):
+def cylinder(scene, name, radius, length, pos, axis, material, sections=32):
     mesh = trimesh.creation.cylinder(radius=radius, height=length, sections=sections)
-    direction = trimesh.unitize(axis)
-    mesh.apply_transform(trimesh.geometry.align_vectors([0, 0, 1], direction))
+    mesh.apply_transform(trimesh.geometry.align_vectors([0, 0, 1], np.asarray(axis, dtype=float)))
     mesh.apply_translation(pos)
-    add(mesh, name, mat)
+    put(scene, mesh, name, material)
 
-# Coordinates match the existing weapon grip and muzzle placement in main.gd.
-box("Adjustable stock", (.12,.15,.27), (0,-.005,.31), polymer)
-box("Rubber butt pad", (.125,.16,.028), (0,-.005,.455), rubber)
-cylinder("Buffer tube", .028,.24,(0,0,.18),(0,0,1),steel)
-box("Lower receiver", (.108,.135,.24),(0,-.075,-.13),steel)
-box("Upper receiver", (.108,.095,.34),(0,.015,-.20),polymer)
-box("Ejection port", (.009,.045,.11),(.057,-.005,-.19),rubber)
-box("Dust cover", (.01,.035,.095),(.063,-.005,-.19),steel)
-cylinder("Forward assist",.018,.025,(.06,.035,-.31),(1,0,0),steel,20)
-box("Free float handguard",(.13,.13,.38),(0,.01,-.53),polymer)
-cylinder("Barrel",.018,.63,(0,.01,-.99),(0,0,1),steel)
-cylinder("Gas block",.026,.07,(0,.01,-.78),(0,0,1),steel)
-cylinder("Flash hider",.027,.075,(0,.01,-1.33),(0,0,1),steel)
-box("Picatinny top rail",(.05,.025,.78),(0,.085,-.50),steel)
-for i in range(14):
-    box(f"Rail tooth {i}",(.052,.012,.018),(0,.103,-.15-i*.052),polymer)
-box("Optic mount",(.09,.055,.13),(0,.14,-.29),steel)
-box("Red dot optic",(.095,.10,.14),(0,.21,-.29),polymer)
-cylinder("Front optic lens",.039,.006,(0,.21,-.365),(0,0,1),glass)
-cylinder("Rear optic lens",.039,.006,(0,.21,-.215),(0,0,1),glass)
-box("Pistol grip",(.075,.19,.10),(0,-.19,-.09),rubber)
-box("Magazine upper",(.078,.14,.11),(0,-.25,-.20),steel)
-box("Magazine upper",(.078,.11,.11),(0,-.255,-.20),steel)
-box("Magazine body upper",(.074,.12,.098),(0,-.355,-.195),polymer)
-box("Magazine body mid",(.071,.12,.094),(0,-.455,-.18),polymer)
-box("Magazine body lower",(.068,.09,.09),(0,-.55,-.16),polymer)
-box("Magazine floor plate",(.085,.025,.115),(0,-.605,-.16),steel)
-box("Trigger guard",(.075,.018,.095),(0,-.155,-.11),steel)
-box("Trigger",(.012,.045,.018),(0,-.15,-.12),brass)
-box("Front sight post",(.018,.085,.025),(0,.14,-.70),steel)
-box("Front sight ears",(.11,.02,.03),(0,.13,-.70),steel)
-for side in (-1,1):
-    box(f"Side rail {side}",(.018,.05,.30),(side*.073,.01,-.53),steel)
-    for j in range(5):
-        box(f"Side rail lug {side}-{j}",(.012,.012,.025),(side*.084,.01,-.40-j*.055),polymer)
-for x in (-.058,.058):
-    for z in (-.29,-.08):
-        cylinder("Receiver pin",.008,.006,(x,-.075,z),(1,0,0),brass,16)
-
-scene.export(out)
-print(f"Created {out} ({out.stat().st_size} bytes)")
-
-# Generate matching, smooth tactical-glove hand models for both controllers.
-def ellipsoid(mesh_name, center, scale, mat, hand_scene):
-    mesh = trimesh.creation.icosphere(subdivisions=2, radius=1.0)
+def capsule(scene, name, radius, height, pos, material, scale=(1,1,1)):
+    mesh = trimesh.creation.capsule(height=height, radius=radius, count=[20, 12])
     mesh.apply_scale(scale)
-    mesh.apply_translation(center)
-    mesh.visual = TextureVisuals(material=mat)
-    hand_scene.add_geometry(mesh, geom_name=mesh_name, node_name=mesh_name)
+    mesh.apply_translation(pos)
+    put(scene, mesh, name, material)
 
-def link(mesh_name, start, end, radius, mat, hand_scene):
-    start, end = __import__("numpy").array(start, dtype=float), __import__("numpy").array(end, dtype=float)
-    delta = end - start
-    mesh = trimesh.creation.cylinder(radius=radius, height=float(__import__("numpy").linalg.norm(delta)), sections=16)
-    mesh.apply_transform(trimesh.geometry.align_vectors([0,0,1], delta))
-    mesh.apply_translation((start + end) * 0.5)
-    mesh.visual = TextureVisuals(material=mat)
-    hand_scene.add_geometry(mesh, geom_name=mesh_name, node_name=mesh_name)
+# Rifle is aligned with the original hand pose: muzzle points down local -Z.
+def build_rifle():
+    scene = trimesh.Scene()
+    rounded_box(scene, "Adjustable stock", (.13,.16,.27), (0,-.005,.31), polymer)
+    rounded_box(scene, "Soft butt pad", (.135,.165,.035), (0,-.005,.455), rubber)
+    cylinder(scene, "Buffer tube", .029,.24,(0,0,.18),(0,0,1),steel)
+    rounded_box(scene, "Lower receiver", (.112,.145,.245),(0,-.075,-.13),steel)
+    rounded_box(scene, "Upper receiver", (.112,.105,.35),(0,.012,-.205),polymer)
+    rounded_box(scene, "Ejection port recess", (.012,.052,.12),(.058,-.002,-.19),rubber,1)
+    rounded_box(scene, "Ejection port cover", (.012,.038,.105),(.066,.004,-.19),steel,1)
+    capsule(scene, "Forward assist", .018,.042,(.064,.035,-.31),steel,(1,1,.7))
+    # Rounded free-float handguard replaces the old rectangular fore-end.
+    capsule(scene, "Rounded handguard", .061,.43,(0,.012,-.535),polymer,(1,1,1))
+    cylinder(scene, "Barrel", .018,.66,(0,.012,-.99),(0,0,1),steel)
+    cylinder(scene, "Gas block", .027,.075,(0,.012,-.79),(0,0,1),steel)
+    cylinder(scene, "Flash hider", .027,.085,(0,.012,-1.36),(0,0,1),steel)
+    rounded_box(scene, "Top rail spine", (.055,.025,.72),(0,.078,-.50),steel,1)
+    for i in range(15):
+        rounded_box(scene, f"Top rail tooth {i}",(.061,.014,.022),(0,.096,-.16-i*.048),polymer,1)
+    for side in (-1,1):
+        rounded_box(scene, f"Side rail {side}",(.018,.045,.32),(side*.061,.012,-.54),steel,1)
+        for j in range(6):
+            rounded_box(scene,f"Side rail lug {side}-{j}",(.012,.014,.027),(side*.073,.012,-.41-j*.05),polymer,1)
+    # Optic housing is a rounded tube with glass front/rear apertures.
+    rounded_box(scene,"Optic mount",(.09,.05,.13),(0,.135,-.29),steel,1)
+    capsule(scene,"Red dot optic housing",.045,.15,(0,.205,-.29),polymer,(1,1,1))
+    cylinder(scene,"Optic front lens",.037,.008,(0,.205,-.37),(0,0,1),glass)
+    cylinder(scene,"Optic rear lens",.037,.008,(0,.205,-.21),(0,0,1),glass)
+    capsule(scene,"Pistol grip",.043,.20,(0,-.19,-.09),rubber,(.9,1,.9))
+    rounded_box(scene,"Magazine well",(.095,.07,.12),(0,-.155,-.19),polymer,1)
+    capsule(scene,"Curved polymer magazine",.039,.27,(0,-.315,-.20),polymer,(1,1,1))
+    rounded_box(scene,"Magazine floor plate",(.086,.027,.11),(0,-.46,-.20),steel,1)
+    # Rounded trigger guard and curved trigger.
+    capsule(scene,"Trigger guard",.012,.12,(0,-.17,-.115),steel,(2.8,1,.65))
+    capsule(scene,"Trigger",.008,.065,(0,-.15,-.13),brass,(.8,1,.8))
+    rounded_box(scene,"Front sight base",(.065,.06,.045),(0,.105,-.72),steel,1)
+    rounded_box(scene,"Front sight ears",(.11,.02,.03),(0,.145,-.72),steel,1)
+    rounded_box(scene,"Front sight post",(.012,.07,.014),(0,.18,-.72),steel,1)
+    out=Path("assets/models/weapons/m4_carbine.glb")
+    out.parent.mkdir(parents=True,exist_ok=True)
+    scene.export(out)
+    print(f"Created rounded rifle {out} ({out.stat().st_size} bytes)")
+
+def ellipsoid(scene, name, center, scale, material):
+    mesh=trimesh.creation.icosphere(subdivisions=3,radius=1.0)
+    mesh.apply_scale(scale); mesh.apply_translation(center)
+    put(scene,mesh,name,material)
+
+def link(scene, name, start, end, radius, material):
+    start,end=np.asarray(start,dtype=float),np.asarray(end,dtype=float)
+    delta=end-start
+    mesh=trimesh.creation.cylinder(radius=radius,height=float(np.linalg.norm(delta)),sections=20)
+    mesh.apply_transform(trimesh.geometry.align_vectors([0,0,1],delta))
+    mesh.apply_translation((start+end)*.5)
+    put(scene,mesh,name,material)
 
 def build_hand(side, filename):
-    from pathlib import Path
-    Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    hand_scene = trimesh.Scene()
-    glove = material("Dark olive tactical glove", (48, 55, 43), 0.0, 0.92)
-    armor = material("Reinforced knuckle fabric", (72, 76, 60), 0.02, 0.88)
-    rubber = material("Grip rubber", (25, 29, 25), 0.0, 0.98)
-    mirror = float(side)
-    ellipsoid("Glove palm", (0,0,0), (.083,.105,.037), glove, hand_scene)
-    ellipsoid("Padded palm heel", (0,.075,.005), (.068,.060,.041), rubber, hand_scene)
-    # Four fingers: articulated segments and raised knuckle pads.
-    finger_x = [-.052,-.018,.018,.052]
-    finger_len = [.105,.125,.118,.095]
-    for i, x in enumerate(finger_x):
-        x *= mirror
-        top = -.07
-        middle = top - finger_len[i]*.48
-        tip = top - finger_len[i]
-        link(f"Finger {i} proximal", (x,top,0), (x, middle, -.006), .014, glove, hand_scene)
-        link(f"Finger {i} distal", (x,middle,-.006), (x,tip,-.014), .0115, glove, hand_scene)
-        ellipsoid(f"Finger {i} knuckle", (x,top,.024), (.018,.021,.012), armor, hand_scene)
-        ellipsoid(f"Finger {i} joint", (x,middle,-.006), (.012,.014,.012), armor, hand_scene)
-        ellipsoid(f"Finger {i} fingertip", (x,tip,-.014), (.012,.018,.012), glove, hand_scene)
-    # Opposing thumb sweeps outward and down toward a natural grip pose.
+    Path(filename).parent.mkdir(parents=True,exist_ok=True)
+    scene=trimesh.Scene()
+    mirror=float(side)
+    ellipsoid(scene,"Glove palm",(0,0,0),(.083,.105,.037),fabric)
+    ellipsoid(scene,"Padded palm heel",(0,.075,.005),(.068,.060,.041),rubber)
+    finger_x=[-.052,-.018,.018,.052]
+    finger_len=[.105,.125,.118,.095]
+    for i,x in enumerate(finger_x):
+        x*=mirror; top=-.07; middle=top-finger_len[i]*.48; tip=top-finger_len[i]
+        link(scene,f"Finger {i} proximal",(x,top,0),(x,middle,-.006),.014,fabric)
+        link(scene,f"Finger {i} distal",(x,middle,-.006),(x,tip,-.014),.0115,fabric)
+        ellipsoid(scene,f"Finger {i} knuckle",(x,top,.024),(.018,.021,.012),armor)
+        ellipsoid(scene,f"Finger {i} joint",(x,middle,-.006),(.012,.014,.012),armor)
+        ellipsoid(scene,f"Finger {i} fingertip",(x,tip,-.014),(.012,.018,.012),fabric)
     t0=(mirror*.066,-.025,0); t1=(mirror*.112,-.078,-.006); t2=(mirror*.13,-.13,-.015)
-    link("Thumb base",t0,t1,.019,glove,hand_scene)
-    link("Thumb tip",t1,t2,.014,glove,hand_scene)
-    ellipsoid("Thumb knuckle",t1,(.021,.022,.016),armor,hand_scene)
-    ellipsoid("Thumb tip pad",t2,(.016,.021,.014),glove,hand_scene)
-    # Wrist cuff and stitched reinforcement panels.
-    link("Wrist cuff",(0,.07,0),(0,.19,0),.047,rubber,hand_scene)
-    ellipsoid("Cuff rim",(0,.17,0),(.052,.025,.052),armor,hand_scene)
-    hand_scene.export(filename)
+    link(scene,"Thumb base",t0,t1,.019,fabric)
+    link(scene,"Thumb tip",t1,t2,.014,fabric)
+    ellipsoid(scene,"Thumb knuckle",t1,(.021,.022,.016),armor)
+    ellipsoid(scene,"Thumb tip pad",t2,(.016,.021,.014),fabric)
+    link(scene,"Wrist cuff",(0,.07,0),(0,.19,0),.047,rubber)
+    ellipsoid(scene,"Cuff rim",(0,.17,0),(.052,.025,.052),armor)
+    scene.export(filename)
+    print(f"Created glove {filename} ({Path(filename).stat().st_size} bytes)")
 
-build_hand(-1, "assets/models/hands/left_hand.glb")
-build_hand(1, "assets/models/hands/right_hand.glb")
+build_rifle()
+build_hand(-1,"assets/models/hands/left_hand.glb")
+build_hand(1,"assets/models/hands/right_hand.glb")
