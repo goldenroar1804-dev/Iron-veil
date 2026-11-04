@@ -47,12 +47,18 @@ jobs:
           set -o pipefail
           godot --headless --xr-mode off --path . --script res://tests/test_pve_smoke.gd 2>&1 | tee godot-tests.log
 
+      - name: Run Map Collision Regression Tests
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --xr-mode off --path . --script res://tests/test_map_collisions.gd 2>&1 | tee godot-collisions.log
+
       - name: Detect Script and Runtime Errors
         if: always()
         shell: bash
         run: |
           failed=0
-          for log in godot-check.log godot-runtime.log godot-tests.log; do
+          for log in godot-check.log godot-runtime.log godot-tests.log godot-collisions.log; do
             if [ -f "$log" ] && grep -Ei "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:|WARNING: Godot 3.x SpatialMaterial remapped parameter not found" "$log"; then
               echo "Godot reported errors in $log."
               failed=1
