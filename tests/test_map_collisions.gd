@@ -40,8 +40,17 @@ func _run() -> void:
             return
         if not _check(game.get_node_or_null(prefix + "_UpperFloor_Collider") is StaticBody3D, prefix + " upper floor must have a collider."):
             return
-        var door_shape := game.get_node_or_null(prefix + "_InteractiveDoor/DoorCollider/CollisionShape3D")
-        if not _check(door_shape is CollisionShape3D, prefix + " interactive door must have a collider."):
+        var door := game.get_node_or_null(prefix + "_InteractiveDoor") as Node3D
+        if not _check(door != null, prefix + " interactive door must exist."):
+            return
+        var door_body := door.get_node_or_null("DoorCollider") as AnimatableBody3D
+        if not _check(door_body != null, prefix + " interactive door must have a physics body."):
+            return
+        var door_has_shape := false
+        for child in door_body.get_children():
+            if child is CollisionShape3D and child.shape != null:
+                door_has_shape = true
+        if not _check(door_has_shape, prefix + " interactive door must have a collision shape."):
             return
 
     for side in ["-1.0", "1.0"]:
