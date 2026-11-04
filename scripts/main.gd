@@ -35,6 +35,10 @@ var right_hand_fingers: Array[Node3D] = []
 var left_hand_thumb: Node3D
 var right_hand_thumb: Node3D
 var interactive_doors: Array[Node3D] = []
+var held_door: Node3D
+var held_door_controller: XRController3D
+var door_grab_start_vector := Vector2.ZERO
+var door_grab_start_rotation := 0.0
 var door_right_grip_was_pressed := false
 var left_grip_was_pressed := false
 var left_hand_grip_was_pressed := false
@@ -885,21 +889,53 @@ func _add_house_collider(label: String, location: Vector3, dimensions: Vector3) 
     add_child(body)
 
 func _build_interactive_door(label: String, center: Vector3) -> void:
+    # Parent the moving hinge to the existing front-left wall collision body.
+    # This keeps the door assembly anchored to the original house instead of
+    # leaving a free-floating door at world level.
+    var wall_anchor := get_node_or_null(label + "_FrontLeftCollision") as StaticBody3D
+    if wall_anchor == null:
+        push_error("IRON VEIL: cannot attach door to missing front wall for " + label)
+        return
+
     var hinge := Node3D.new()
     hinge.name = label + "_InteractiveDoor"
-    hinge.position = center + Vector3(-0.58, 0.0, -2.91)
-    hinge.set_meta("open", false)
+    hinge.position = Vector3(1.645, -1.55, 0.07)
     hinge.set_meta("target_angle", 0.0)
-    add_child(hinge)
+    hinge.set_meta("is_being_held", false)
+    wall_anchor.add_child(hinge)
     hinge.add_to_group("interactive_doors")
+
     var panel := MeshInstance3D.new()
     panel.name = "DoorPanel"
     var mesh := BoxMesh.new()
-    mesh.size = Vector3(1.16, 2.12, 0.06)
+    mesh.size = Vector3(1.16, 2.12, 0.075)
     panel.mesh = mesh
     panel.position = Vector3(0.58, 1.06, 0.0)
-    panel.material_override = _material(Color(0.25, 0.17, 0.11))
+    panel.material_override = _material(Color(0.19, 0.125, 0.075))
     hinge.add_child(panel)
+
+    # Raised inset panels and edge rails make the door read as a finished
+    # residential door while keeping the geometry inexpensive for Quest.
+    for panel_index in range(2):
+        var inset := MeshInstance3D.new()
+        inset.name = "RaisedInsetPanel_%d" % panel_index
+        var inset_mesh := BoxMesh.new()
+        inset_mesh.size = Vector3(0.78, 0.72, 0.018)
+        inset.mesh = inset_mesh
+        inset.position = Vector3(0.58, 0.56 + float(panel_index) * 0.91, -0.047)
+        inset.material_override = _material(Color(0.27, 0.18, 0.11))
+        hinge.add_child(inset)
+
+    for rail in range(2):
+        var edge := MeshInstance3D.new()
+        edge.name = "DoorEdgeRail_%d" % rail
+        var edge_mesh := BoxMesh.new()
+        edge_mesh.size = Vector3(0.035, 2.10, 0.035)
+        edge.mesh = edge_mesh
+        edge.position = Vector3(0.04 + float(rail) * 1.08, 1.06, -0.045)
+        edge.material_override = _material(Color(0.12, 0.085, 0.055))
+        hinge.add_child(edge)
+
     var body := AnimatableBody3D.new()
     body.name = "DoorCollider"
     body.sync_to_physics = true
@@ -910,53 +946,120 @@ func _build_interactive_door(label: String, center: Vector3) -> void:
     collision.shape = shape
     body.add_child(collision)
     hinge.add_child(body)
-    var knob := MeshInstance3D.new()
-    knob.name = "DoorHandle"
-    var knob_mesh := SphereMesh.new()
-    knob_mesh.radius = 0.035
-    knob_mesh.height = 0.07
-    knob.mesh = knob_mesh
-    knob.position = Vector3(1.02, 1.02, -0.04)
-    knob.material_override = _material(Color(0.55, 0.48, 0.30))
-    hinge.add_child(knob)
+
+    # Lever-style handle with a visible backplate, shaft and grip.
+    var handle_mount := MeshInstance3D.new()
+    handle_mount.name = "HandleBackplate"
+    var mount_mesh := BoxMesh.new()
+    mount_mesh.size = Vector3(0.085, 0.16, 0.018)
+    handle_mount.mesh = mount_mesh
+    handle_mount.position = Vector3(1.015, 1.02, -0.055)
+    handle_mount.material_override = _material(Color(0.30, 0.27, 0.20))
+    hinge.add_child(handle_mount)
+
+    var handle := Node3D.new()
+    handle.name = "DoorHandle"
+    handle.position = Vector3(1.015, 1.02, -0.075)
+    hinge.add_child(handle)
+    var handle_shaft := MeshInstance3D.new()
+    handle_shaft.name = "HandleShaft"
+    var shaft_mesh := CylinderMesh.new()
+    shaft_mesh.top_radius = 0.014
+    shaft_mesh.bottom_radius = 0.014
+    shaft_mesh.height = 0.11
+    handle_shaft.mesh = shaft_mesh
+    handle_shaft.rotation_degrees.z = 90.0
+    handle_shaft.position = Vector3(-0.035, 0.0, -0.01)
+    handle_shaft.material_override = _material(Color(0.52, 0.46, 0.31))
+    handle.add_child(handle_shaft)
+
+    var lever := MeshInstance3D.new()
+    lever.name = "HandleLever"
+    var lever_mesh := CapsuleMesh.new()
+    lever_mesh.radius = 0.018
+    lever_mesh.height = 0.16
+    lever.mesh = lever_mesh
+    lever.rotation_degrees.z = 90.0
+    lever.position = Vector3(0.025, 0.0, -0.012)
+    lever.material_override = _material(Color(0.62, 0.55, 0.38))
+    handle.add_child(lever)
+
     interactive_doors.append(hinge)
 
+
+func _controller_grip_pressed(controller: XRController3D) -> bool:
+    return controller.is_button_pressed("grip") or controller.get_float("grip") > 0.55
+
+
 func _update_door_interaction() -> bool:
-    var right_pressed := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
-    var left_pressed := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.55
+    var right_pressed := _controller_grip_pressed(right_controller)
+    var left_pressed := _controller_grip_pressed(left_controller)
     var right_edge := right_pressed and not door_right_grip_was_pressed
     var left_edge := left_pressed and not left_grip_was_pressed
     door_right_grip_was_pressed = right_pressed
     left_grip_was_pressed = left_pressed
-    if not right_pressed and not left_pressed:
+
+    # Continue driving the door while the same controller holds its handle.
+    if held_door != null and is_instance_valid(held_door):
+        var still_pressed := _controller_grip_pressed(held_door_controller)
+        if still_pressed:
+            var parent := held_door.get_parent() as Node3D
+            var controller_local := parent.to_local(held_door_controller.global_position)
+            var hinge_local := held_door.position
+            var current_vector := Vector2(controller_local.x - hinge_local.x, controller_local.z - hinge_local.z)
+            if current_vector.length_squared() > 0.0001:
+                var swing_delta := door_grab_start_vector.angle_to(current_vector)
+                var new_angle := door_grab_start_rotation - swing_delta
+                held_door.rotation.y = clampf(new_angle, deg_to_rad(-110.0), deg_to_rad(110.0))
+                held_door.set_meta("target_angle", held_door.rotation.y)
+            return true
+        held_door.set_meta("is_being_held", false)
+        held_door = null
+        held_door_controller = null
+        return true
+
+    # A new grip edge can latch onto a handle only at close range.
+    var controller: XRController3D = right_controller if right_edge else (left_controller if left_edge else null)
+    if controller == null:
         return false
-    var controller := right_controller if right_pressed else left_controller
-    var edge := right_edge if right_pressed else left_edge
-    var nearest: Node3D = null
-    var nearest_distance := 1.3
+
+    var nearest: Node3D
+    var nearest_distance := 0.24
     for door in interactive_doors:
         if not is_instance_valid(door):
             continue
         var handle := door.get_node_or_null("DoorHandle") as Node3D
-        var interaction_point := handle.global_position if handle != null else door.global_position + Vector3(0, 1.0, 0)
-        var distance := controller.global_position.distance_to(interaction_point)
+        if handle == null:
+            continue
+        var distance := controller.global_position.distance_to(handle.global_position)
         if distance < nearest_distance:
             nearest = door
             nearest_distance = distance
+
     if nearest == null:
         return false
-    if edge:
-        var opening := not bool(nearest.get_meta("open"))
-        nearest.set_meta("open", opening)
-        nearest.set_meta("target_angle", deg_to_rad(-95.0 if opening else 0.0))
-        controller.trigger_haptic_pulse("haptic", 0.75, 0.7, 0.13, 0.0)
+
+    held_door = nearest
+    held_door_controller = controller
+    held_door.set_meta("is_being_held", true)
+    var parent := held_door.get_parent() as Node3D
+    var controller_local := parent.to_local(controller.global_position)
+    var hinge_local := held_door.position
+    door_grab_start_vector = Vector2(controller_local.x - hinge_local.x, controller_local.z - hinge_local.z)
+    door_grab_start_rotation = held_door.rotation.y
+    controller.trigger_haptic_pulse("haptic", 0.65, 0.7, 0.10, 0.0)
+    print("IRON VEIL: grabbed door handle on ", held_door.name)
     return true
+
 
 func _animate_doors(delta: float) -> void:
     for door in interactive_doors:
-        if is_instance_valid(door):
-            var target := float(door.get_meta("target_angle"))
-            door.rotation.y = lerp_angle(door.rotation.y, target, 1.0 - exp(-8.0 * delta))
+        if not is_instance_valid(door) or bool(door.get_meta("is_being_held")):
+            continue
+        # Doors remain where the player leaves them; no artificial toggle or
+        # auto-close animation fights the hand-driven hinge motion.
+        var target := float(door.get_meta("target_angle"))
+        door.rotation.y = lerp_angle(door.rotation.y, target, 1.0 - exp(-10.0 * delta))
 
 
 func _build_parked_car(label: String, center: Vector3, body_color: Color) -> void:
