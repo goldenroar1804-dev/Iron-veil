@@ -215,7 +215,8 @@ func _pose_one_hand(controller: XRController3D, fingers: Array[Node3D], thumb: N
     for i in range(fingers.size()):
         var finger := fingers[i]
         var curl := grip * 1.18
-        if i == 1:
+        var index_finger_index := 3 if controller == right_controller else 0
+        if i == index_finger_index:
             curl = maxf(curl, trigger * 1.18)
         finger.rotation.x = curl
         var distal := finger.get_meta("distal_joint") as Node3D
@@ -614,7 +615,7 @@ func _install_environment_model(label: String, center: Vector3, path: String, mo
         if child is MeshInstance3D and child.name.begins_with(label + "_"):
             # Keep the authored playable interior: floor, stair treads and landing.
             # Only obsolete exterior prototype meshes are hidden by the imported shell.
-            var keep_interior := child.name.contains("InteriorFloor") or child.name.contains("Stair_") or child.name.contains("UpperLanding")
+            var keep_interior := child.name.contains("InteriorFloor") or child.name.contains("Stair_") or child.name.contains("UpperLanding") or child.name.contains("UpperFloor")
             if not keep_interior:
                 child.visible = false
 
@@ -679,7 +680,7 @@ func _build_suburban_block() -> void:
     _add_box("LeftSidewalk", Vector3(2.0, 0.16, 82), Vector3(-5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
     _add_box("RightSidewalk", Vector3(2.0, 0.16, 82), Vector3(5.5, 0.0, -39), Color(0.42, 0.42, 0.39))
     for z in range(0, 82, 4):
-        _add_box("CenterRoadDash_%d" % z, Vector3(0.12, 0.012, 1.8), Vector3(0, 0.02, -float(z) - 1.0), Color(0.78, 0.73, 0.53))
+        _add_visual_box("CenterRoadDash_%d" % z, Vector3(0.12, 0.012, 1.8), Vector3(0, 0.02, -float(z) - 1.0), Color(0.78, 0.73, 0.53))
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-48, -28, 0)
@@ -862,13 +863,10 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
         var rise := 0.285
         var step_pos := center + Vector3(-2.35, 0.16 + float(step) * rise, -1.45 + float(step) * tread)
         _add_box(label + "_Stair_%02d" % step, Vector3(0.92, 0.18, 0.34), step_pos, Color(0.29, 0.25, 0.20))
-        _add_house_collider(label + "_StairCollision_%02d" % step, step_pos, Vector3(0.92, 0.18, 0.34))
     _add_box(label + "_UpperLanding", Vector3(1.0, 0.16, 1.25), center + Vector3(-2.35, 3.02, 1.55), Color(0.30, 0.27, 0.22))
-    _add_house_collider(label + "_LandingCollision", center + Vector3(-2.35, 3.02, 1.55), Vector3(1.0, 0.16, 1.25))
     # A compact upper-floor loft gives the staircase somewhere to lead; it
     # leaves the central/right ground-floor room open for CQB movement.
     _add_box(label + "_UpperFloor", Vector3(6.5, 0.16, 1.55), center + Vector3(0, 3.02, 1.82), Color(0.30, 0.27, 0.22))
-    _add_house_collider(label + "_UpperFloorCollision", center + Vector3(0, 3.02, 1.82), Vector3(6.5, 0.16, 1.55))
     _build_interactive_door(label, center)
 
 func _add_house_collider(label: String, location: Vector3, dimensions: Vector3) -> void:
@@ -996,7 +994,7 @@ func _build_fence_segment(label: String, x: float, z: float) -> void:
         _add_box(label + "_Rail", Vector3(0.10, 0.10, 4.0), Vector3(x, y, z), Color(0.34, 0.25, 0.17))
     for plank in range(15):
         var plank_z := z - 1.86 + float(plank) * 0.265
-        _add_box(label + "_Picket_%02d" % plank, Vector3(0.075, 0.88, 0.19), Vector3(x, 0.56, plank_z), wood)
+        _add_visual_box(label + "_Picket_%02d" % plank, Vector3(0.075, 0.88, 0.19), Vector3(x, 0.56, plank_z), wood)
 
 func _build_hedge(label: String, center: Vector3) -> void:
     # Keep one invisible broad collider for movement while rendering a varied,
@@ -1048,8 +1046,8 @@ func _add_streetlight(x: float, z: float) -> void:
     var arm_x := 0.68 if x < 0 else -0.68
     _add_round_primitive("StreetlightPole", 0.055, 4.4, Vector3(x, 2.2, z), pole_color)
     _add_round_primitive("StreetlightArm", 0.045, 0.82, Vector3(x + arm_x * 0.5, 4.20, z), pole_color, Vector3(1, 0, 0))
-    _add_box("StreetlightLuminaireHousing", Vector3(0.34, 0.09, 0.22), Vector3(x + arm_x, 4.16, z), Color(0.20, 0.22, 0.20))
-    _add_box("StreetlightDiffuser", Vector3(0.27, 0.018, 0.16), Vector3(x + arm_x, 4.105, z), Color(0.88, 0.82, 0.64))
+    _add_visual_box("StreetlightLuminaireHousing", Vector3(0.34, 0.09, 0.22), Vector3(x + arm_x, 4.16, z), Color(0.20, 0.22, 0.20))
+    _add_visual_box("StreetlightDiffuser", Vector3(0.27, 0.018, 0.16), Vector3(x + arm_x, 4.105, z), Color(0.88, 0.82, 0.64))
 
 func _build_cqb_target(label: String, ground_position: Vector3, target_color: Color) -> void:
     var target := Node3D.new()
@@ -1110,7 +1108,7 @@ func _start_openxr() -> void:
     else:
         push_warning("IRON VEIL: OpenXR is not initialized. Check XR settings and launch on the headset.")
 
-func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
+func _add_visual_box(label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
     var box := MeshInstance3D.new()
     box.name = label
     var mesh := BoxMesh.new()
@@ -1119,7 +1117,11 @@ func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color
     box.position = location
     box.material_override = _material(tint)
     add_child(box)
-    # Every static architectural/vehicle box receives a matching physics collider.
+    return box
+
+func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
+    var box := _add_visual_box(label, dimensions, location, tint)
+    # Architectural and vehicle boxes receive matching static collision.
     var body := StaticBody3D.new()
     body.name = label + "_Collider"
     body.position = location
