@@ -46,6 +46,6 @@ The GitHub Actions workflow `.github/workflows/import-cc0-assets.yml` downloads 
 - More complete squad tactics, navigation around complex interiors, enemy communication/voice lines, and difficulty tuning.
 
 ## Testing status
-GitHub Actions on the feature branch runs Godot 4.6 editor import/script checks, a headless launch of the main scene with XR disabled, and headless PvE regression tests. The PvE tests cover engagement beyond the guard radius, investigating after line-of-sight is lost, squad contact sharing, enemy elimination, and mission completion. The latest run passed on commit `5e85083`.
+GitHub Actions on the feature branch runs Godot 4.6 editor import/script checks, a headless launch of the main scene with XR disabled, and headless PvE regression tests. The PvE tests cover engagement beyond the guard radius, investigating after line-of-sight is lost, squad contact sharing, enemy elimination, and mission completion. These checks run automatically on pushes to the feature branch.
 
 These automated checks do not validate APK export, actual OpenXR controller tracking, headset frame rate, or physical interactions. Test the build on Quest 3 before merging, especially house cutaway alignment, weapon scale and hand alignment, door collision, stair traversal, and two-hand aiming. The AI uses lightweight local steering and physics queries rather than a baked navigation mesh, so complex indoor navigation still needs a dedicated pass.
