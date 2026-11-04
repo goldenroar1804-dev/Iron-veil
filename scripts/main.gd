@@ -635,7 +635,8 @@ func _install_environment_model(label: String, center: Vector3, path: String, mo
             # Keep the authored playable interior: floor, stair treads and landing.
             # Only obsolete exterior prototype meshes are hidden by the imported shell.
             var keep_interior := child.name.contains("InteriorFloor") or child.name.contains("Stair_") or child.name.contains("UpperLanding") or child.name.contains("UpperFloor")
-            if not keep_interior:
+            var keep_facade_detail := child.name.contains("Foundation") or child.name.contains("FrontCornerBoard") or child.name.contains("WindowSill") or child.name.contains("WindowJamb") or child.name.contains("DoorJamb") or child.name.contains("DoorHeaderTrim") or child.name.contains("PorchStep") or child.name.contains("RoofFascia") or child.name.contains("Downspout") or child.name.contains("SidingLine")
+            if not keep_interior and not keep_facade_detail:
                 child.visible = false
 
 func _load_or_download_sound(cache_path: String, url: String, request_node: HTTPRequest) -> void:
