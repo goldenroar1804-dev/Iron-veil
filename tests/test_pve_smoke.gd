@@ -37,7 +37,7 @@ func _run() -> void:
     enemy.add_child(enemy_shape)
     world.add_child(enemy)
     enemy.set_physics_process(false)
-    enemy.home_position = Vector3(-10.0, 0.0, 0.0)
+    enemy.set("home_position", Vector3(-10.0, 0.0, 0.0))
     enemy.set_physics_process(true)
 
     await physics_frame
@@ -76,10 +76,10 @@ func _run() -> void:
         return
 
     var eliminated_count := [0]
-    enemy.eliminated.connect(func() -> void:
+    enemy.connect("eliminated", func() -> void:
         eliminated_count[0] += 1
     )
-    enemy.apply_hit(3)
+    enemy.call("apply_hit", 3)
     if not _check(int(enemy.get("state")) == 5, "Enemy should enter DOWN when health reaches zero."):
         return
     if not _check(eliminated_count[0] == 1, "Enemy should emit eliminated exactly once."):
