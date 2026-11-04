@@ -39,6 +39,10 @@ var door_right_grip_was_pressed := false
 var left_grip_was_pressed := false
 var left_hand_grip_was_pressed := false
 var right_hand_grip_was_pressed := false
+var left_trigger_was_pressed := false
+var rifle_ammo := 30
+var rifle_reserve_ammo := 90
+var mission_director: Node
 
 func _ready() -> void:
     _start_openxr()
@@ -54,9 +58,11 @@ func _process(delta: float) -> void:
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
     _update_hand_pose()
-    _update_door_interaction()
+    var door_consumed_grip := _update_door_interaction()
     _animate_doors(delta)
-    _update_weapon_grab()
+    _update_weapon_grab(door_consumed_grip)
+    _update_two_hand_support()
+    _update_weapon_reload()
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
@@ -364,9 +370,9 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
     part.material_override = _material(tint)
     parent.add_child(part)
 
-func _update_weapon_grab() -> void:
-    var right_grip := right_controller.is_button_pressed("grip")
-    if not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
+func _update_weapon_grab(door_consumed_grip: bool = false) -> void:
+    var right_grip := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
+    if not door_consumed_grip and not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
         rifle.reparent(right_controller, false)
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
@@ -380,16 +386,40 @@ func _update_weapon_grab() -> void:
         print("IRON VEIL: M4 released")
     grip_was_pressed = right_grip
 
+func _update_two_hand_support() -> void:
+    if not rifle_held:
+        return
+    var left_grip := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.55
+    var foregrip_position := rifle.to_global(Vector3(0.0, 0.01, -0.53))
+    if left_grip and left_controller.global_position.distance_to(foregrip_position) < 0.70:
+        var support_direction := left_controller.global_position - right_controller.global_position
+        if support_direction.length_squared() > 0.01:
+            rifle.look_at(rifle.global_position + support_direction.normalized(), Vector3.UP)
+    else:
+        rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
+
+func _update_weapon_reload() -> void:
+    var left_trigger := left_controller.is_button_pressed("trigger") or left_controller.get_float("trigger") > 0.65
+    if rifle_held and left_trigger and not left_trigger_was_pressed and rifle_ammo < 30 and rifle_reserve_ammo > 0:
+        var needed := 30 - rifle_ammo
+        var loaded := mini(needed, rifle_reserve_ammo)
+        rifle_ammo += loaded
+        rifle_reserve_ammo -= loaded
+        left_controller.trigger_haptic_pulse("haptic", 0.7, 0.7, 0.12, 0.0)
+        print("IRON VEIL: reload complete | magazine ", rifle_ammo, " | reserve ", rifle_reserve_ammo)
+    left_trigger_was_pressed = left_trigger
+
 func _update_firing() -> void:
-    var pressed := right_controller.is_button_pressed("trigger")
-    if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0:
+    var pressed := right_controller.is_button_pressed("trigger") or right_controller.get_float("trigger") > 0.65
+    if rifle_held and pressed and not trigger_was_pressed and fire_cooldown <= 0.0 and rifle_ammo > 0:
         _fire_rifle()
         fire_cooldown = fire_interval
     trigger_was_pressed = pressed
 
 func _fire_rifle() -> void:
-    if rifle == null or not rifle_held:
+    if rifle == null or not rifle_held or rifle_ammo <= 0:
         return
+    rifle_ammo -= 1
     for child in rifle.get_children():
         if child.name.begins_with("MuzzleFlash_Layer_"):
             child.visible = true
@@ -405,12 +435,17 @@ func _fire_rifle() -> void:
     gun_audio.play()
     right_controller.trigger_haptic_pulse("haptic", 0.95, 0.8, 0.075, 0.0)
     var muzzle := rifle.global_position + (-rifle.global_transform.basis.z * 1.40)
+    for enemy in get_tree().get_nodes_in_group("tactical_enemies"):
+        if is_instance_valid(enemy) and enemy.has_method("notify_sound"):
+            enemy.notify_sound(muzzle)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
     query.collide_with_areas = true
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty():
         _spawn_bullet_impact(hit.position, hit.normal)
+        if hit.collider.has_method("apply_hit"):
+            hit.collider.apply_hit(1)
         print("IRON VEIL: hit ", hit.collider.name)
 
 func _create_muzzle_flash_png(tint: Color, brightness: float) -> Texture2D:
@@ -685,8 +720,66 @@ func _build_suburban_block() -> void:
     _build_parked_car("ParkedCar_Right_01", Vector3(3.5, 0.0, -28.0), Color(0.35, 0.16, 0.12))
     _build_parked_car("ParkedCar_Left_02", Vector3(-3.5, 0.0, -48.0), Color(0.19, 0.24, 0.20))
     _build_parked_car("ParkedCar_Right_02", Vector3(3.5, 0.0, -66.0), Color(0.28, 0.20, 0.16))
+    _spawn_tactical_enemies()
 
 
+
+func _spawn_tactical_enemies() -> void:
+    xr_camera.add_to_group("player_camera")
+    var enemy_positions: Array[Vector3] = [
+        Vector3(-12.0, 0.05, -13.0),
+        Vector3(12.0, 0.05, -24.0),
+        Vector3(-12.0, 0.05, -43.0),
+        Vector3(12.0, 0.05, -62.0)
+    ]
+    var director_script := load("res://scripts/mission_director.gd") as Script
+    if director_script != null:
+        mission_director = Node.new()
+        mission_director.name = "MissionDirector"
+        mission_director.set_script(director_script)
+        add_child(mission_director)
+        mission_director.call("start_operation", enemy_positions.size())
+    var enemy_script := load("res://scripts/tactical_enemy.gd") as Script
+    if enemy_script == null:
+        push_warning("IRON VEIL: tactical enemy script could not be loaded.")
+        return
+    for i in range(enemy_positions.size()):
+        var enemy := CharacterBody3D.new()
+        enemy.name = "PvE_OpFor_%02d" % i
+        enemy.position = enemy_positions[i]
+        enemy.set_script(enemy_script)
+        enemy.set("aggression", randf_range(0.35, 0.95))
+        enemy.set("move_speed", randf_range(0.9, 1.45))
+        var collision := CollisionShape3D.new()
+        var capsule := CapsuleShape3D.new()
+        capsule.radius = 0.30
+        capsule.height = 1.75
+        collision.shape = capsule
+        collision.position.y = 0.88
+        enemy.add_child(collision)
+        var uniform := MeshInstance3D.new()
+        uniform.name = "Uniform"
+        var torso := CapsuleMesh.new()
+        torso.radius = 0.29
+        torso.height = 1.25
+        uniform.mesh = torso
+        uniform.position.y = 0.92
+        uniform.material_override = _material(Color(0.19, 0.22, 0.18))
+        enemy.add_child(uniform)
+        var head := MeshInstance3D.new()
+        head.name = "Head"
+        var head_shape := SphereMesh.new()
+        head_shape.radius = 0.16
+        head_shape.height = 0.32
+        head.mesh = head_shape
+        head.position.y = 1.68
+        head.material_override = _material(Color(0.34, 0.27, 0.21))
+        enemy.add_child(head)
+        enemy.set("body_mesh", uniform)
+        enemy.set("head_mesh", head)
+        add_child(enemy)
+        if mission_director != null:
+            mission_director.call("register_enemy", enemy)
 
 func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
     # Each house receives a randomized number and arrangement of indoor CQB targets.
@@ -827,8 +920,8 @@ func _build_interactive_door(label: String, center: Vector3) -> void:
     interactive_doors.append(hinge)
 
 func _update_door_interaction() -> bool:
-    var right_pressed := right_controller.is_button_pressed("grip")
-    var left_pressed := left_controller.is_button_pressed("grip")
+    var right_pressed := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
+    var left_pressed := left_controller.is_button_pressed("grip") or left_controller.get_float("grip") > 0.55
     var right_edge := right_pressed and not door_right_grip_was_pressed
     var left_edge := left_pressed and not left_grip_was_pressed
     door_right_grip_was_pressed = right_pressed
