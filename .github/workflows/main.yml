@@ -35,12 +35,30 @@ jobs:
           set -o pipefail
           godot --headless --editor --path . --quit 2>&1 | tee godot-check.log
 
-      - name: Detect Script and Import Errors
+      - name: Run Headless Scene Smoke Test
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --xr-mode off --path . --quit-after 8 2>&1 | tee godot-runtime.log
+
+      - name: Run PvE Regression Tests
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --xr-mode off --path . --script res://tests/test_pve_smoke.gd 2>&1 | tee godot-tests.log
+
+      - name: Detect Script and Runtime Errors
         if: always()
         shell: bash
         run: |
-          if grep -Ei "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" godot-check.log; then
-            echo "Godot reported errors. Check the log above."
+          failed=0
+          for log in godot-check.log godot-runtime.log godot-tests.log; do
+            if [ -f "$log" ] && grep -Ei "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" "$log"; then
+              echo "Godot reported errors in $log."
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
             exit 1
           fi
           echo "No matching Godot errors detected."
