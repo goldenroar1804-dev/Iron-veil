@@ -40,8 +40,12 @@ func _run() -> void:
             return
         if not _check(game.get_node_or_null(prefix + "_UpperFloor_Collider") is StaticBody3D, prefix + " upper floor must have a collider."):
             return
-        var door := game.get_node_or_null(prefix + "_InteractiveDoor") as Node3D
+        var door := game.find_child(prefix + "_InteractiveDoor", true, false) as Node3D
         if not _check(door != null, prefix + " interactive door must exist."):
+            return
+        if not _check(door.get_parent() is StaticBody3D, prefix + " door hinge must be attached to the original front-wall collider."):
+            return
+        if not _check(door.get_node_or_null("DoorHandle/HandleLever") is MeshInstance3D, prefix + " door must have a grabbable lever handle."):
             return
         var door_body := door.get_node_or_null("DoorCollider") as AnimatableBody3D
         if not _check(door_body != null, prefix + " interactive door must have a physics body."):
@@ -69,5 +73,5 @@ func _run() -> void:
     if not _check(bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, -0.02))), "Player collision query must detect the front house wall."):
         return
 
-    print("IRON VEIL: all suburban map collider audits passed.")
+    print("IRON VEIL: all suburban map collider and attached-door audits passed.")
     quit(0)
