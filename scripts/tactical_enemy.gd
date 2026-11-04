@@ -76,6 +76,9 @@ func _physics_process(delta: float) -> void:
             shared_alert_position = target.global_position
             shared_alert_revision += 1
             has_reported_contact = true
+        # Remember the latest squad alert so we do not re-investigate our own
+        # contact report on the next frame.
+        seen_alert_revision = shared_alert_revision
         if distance < 2.8:
             state = BrainState.RETREAT
         elif distance < 15.0:
@@ -83,27 +86,35 @@ func _physics_process(delta: float) -> void:
         else:
             state = BrainState.GUARD
     else:
-        has_reported_contact = false
-    if not can_see and seen_alert_revision != shared_alert_revision:
-        seen_alert_revision = shared_alert_revision
-        last_known_position = shared_alert_position
-        investigate_timer = 4.0
-        state = BrainState.INVESTIGATE
-    elif state == BrainState.INVESTIGATE:
-        investigate_timer = maxf(0.0, investigate_timer - delta)
-        if global_position.distance_to(last_known_position) < 1.0 or investigate_timer <= 0.0:
-            state = BrainState.SEARCH
-            search_timer = 3.5
-    elif state == BrainState.SEARCH:
-        search_timer = maxf(0.0, search_timer - delta)
-        decision_timer -= delta
-        if decision_timer <= 0.0:
-            strafe_sign *= -1.0
-            decision_timer = randf_range(0.7, 1.4)
-        if search_timer <= 0.0:
-            state = BrainState.GUARD
-    else:
-        if global_position.distance_to(home_position) > guard_radius:
+        if has_reported_contact:
+            # We had visual contact and just lost it: move to the last known
+            # position instead of continuing to react to the player's live pose.
+            has_reported_contact = false
+            investigate_timer = 4.0
+            state = BrainState.INVESTIGATE
+        elif seen_alert_revision != shared_alert_revision:
+            seen_alert_revision = shared_alert_revision
+            last_known_position = shared_alert_position
+            investigate_timer = 4.0
+            state = BrainState.INVESTIGATE
+        elif state == BrainState.INVESTIGATE:
+            investigate_timer = maxf(0.0, investigate_timer - delta)
+            if global_position.distance_to(last_known_position) < 1.0 or investigate_timer <= 0.0:
+                state = BrainState.SEARCH
+                search_timer = 3.5
+        elif state == BrainState.SEARCH:
+            search_timer = maxf(0.0, search_timer - delta)
+            decision_timer -= delta
+            if decision_timer <= 0.0:
+                strafe_sign *= -1.0
+                decision_timer = randf_range(0.7, 1.4)
+            if search_timer <= 0.0:
+                state = BrainState.GUARD
+        elif state == BrainState.ENGAGE or state == BrainState.RETREAT:
+            # Do not keep tracking the player's live location through walls.
+            investigate_timer = 4.0
+            state = BrainState.INVESTIGATE
+        elif global_position.distance_to(home_position) > guard_radius:
             state = BrainState.GUARD
 
     var desired := Vector3.ZERO
