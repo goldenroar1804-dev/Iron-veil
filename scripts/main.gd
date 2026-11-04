@@ -141,15 +141,12 @@ func _build_hands() -> void:
     _make_human_hand(right_controller, "RightHumanHand")
 
 func _make_human_hand(parent: Node3D, hand_name: String) -> void:
-    # Use articulated runtime fingers so grip/trigger input visibly drives the hand.
-    # The local X rotation turns the original palm plane upright and points fingers
-    # out along controller forward (-Z), instead of down toward the floor.
+    # A more anatomical tactical-glove silhouette. The palm lies flat in the
+    # X/Z plane, with the fingers extending forward along controller -Z.
     var is_left := hand_name.begins_with("Left")
     var hand := Node3D.new()
     hand.name = hand_name
-    hand.position = Vector3(0.0, -0.025, -0.075)
-    # Controller local -Z is the hand's forward direction. Keep the hand in
-    # controller space instead of rotating the palm so its fingers point down.
+    hand.position = Vector3(0.0, -0.018, -0.075)
     hand.quaternion = Quaternion.IDENTITY
     parent.add_child(hand)
     if is_left:
@@ -160,42 +157,56 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     var glove := Color(0.105, 0.12, 0.105)
     var fabric := Color(0.19, 0.21, 0.17)
     var rubber := Color(0.045, 0.052, 0.047)
-    _add_hand_sphere(hand, "Palm", Vector3(0.078, 0.095, 0.032), Vector3(0, 0, 0), glove)
-    _add_hand_sphere(hand, "PaddedBack", Vector3(0.071, 0.078, 0.018), Vector3(0, 0.035, 0.006), fabric)
-    var wrist := _add_hand_capsule(hand, "WristCuff", 0.039, 0.105, Vector3(0, 0, 0.105), rubber)
-    wrist.rotation_degrees.x = 90.0
+    var seam := Color(0.27, 0.28, 0.23)
 
+    # Palm and dorsal padding: wide across X, long along Z, thin along Y.
+    _add_hand_sphere(hand, "Palm", Vector3(0.073, 0.027, 0.088), Vector3(0, 0, -0.035), glove)
+    _add_hand_sphere(hand, "DorsalPadding", Vector3(0.060, 0.012, 0.057), Vector3(0, 0.023, -0.044), fabric)
+    _add_hand_sphere(hand, "HeelPadding", Vector3(0.061, 0.022, 0.029), Vector3(0, 0, 0.025), rubber)
+
+    # Four individually articulated fingers with visible knuckle guards.
     var finger_array: Array[Node3D] = []
     for i in range(4):
-        var x := (float(i) - 1.5) * 0.035
+        var x := (float(i) - 1.5) * 0.034
         var finger := Node3D.new()
         finger.name = "Finger_%d_Pivot" % i
-        finger.position = Vector3(x, 0.0, -0.065)
+        finger.position = Vector3(x, 0.0, -0.092)
         hand.add_child(finger)
-        var proximal := _add_hand_capsule(finger, "Proximal", 0.0125, 0.075, Vector3(0, 0, -0.038), glove)
+
+        var proximal := _add_hand_capsule(finger, "Proximal", 0.0115, 0.067, Vector3(0, 0, -0.033), glove)
         proximal.rotation_degrees.x = 90.0
-        _add_hand_sphere(finger, "KnucklePad", Vector3(0.014, 0.014, 0.012), Vector3(0, 0.035, -0.012), fabric)
+        _add_hand_sphere(finger, "KnuckleGuard", Vector3(0.014, 0.009, 0.018), Vector3(0, 0.018, -0.012), fabric)
+
         var distal := Node3D.new()
         distal.name = "DistalJoint"
-        distal.position = Vector3(0, 0, -0.071)
+        distal.position = Vector3(0, 0, -0.064)
         finger.add_child(distal)
-        var distal_mesh := _add_hand_capsule(distal, "Distal", 0.0105, 0.060, Vector3(0, 0, -0.029), glove)
+        var distal_mesh := _add_hand_capsule(distal, "Distal", 0.010, 0.054, Vector3(0, 0, -0.027), glove)
         distal_mesh.rotation_degrees.x = 90.0
+        _add_hand_sphere(distal, "Fingertip", Vector3(0.010, 0.010, 0.012), Vector3(0, 0, -0.049), fabric)
         finger.set_meta("distal_joint", distal)
         finger_array.append(finger)
 
+    # Thumb angles inward across the palm instead of sticking straight out.
     var thumb := Node3D.new()
     thumb.name = "ThumbPivot"
-    thumb.position = Vector3(0.075 if not is_left else -0.075, 0.0, -0.015)
+    thumb.position = Vector3(0.068 if not is_left else -0.068, 0.0, -0.018)
+    thumb.rotation_degrees.y = 38.0 if not is_left else -38.0
     hand.add_child(thumb)
-    var thumb_base := _add_hand_capsule(thumb, "ThumbBase", 0.015, 0.075, Vector3(0.0, 0.0, -0.035), glove)
+    var thumb_base := _add_hand_capsule(thumb, "ThumbBase", 0.014, 0.070, Vector3(0, 0, -0.035), glove)
     thumb_base.rotation_degrees.x = 90.0
     var thumb_tip := Node3D.new()
     thumb_tip.name = "ThumbTipJoint"
-    thumb_tip.position = Vector3(0.0, 0.0, -0.068)
+    thumb_tip.position = Vector3(0, 0, -0.064)
     thumb.add_child(thumb_tip)
-    var thumb_tip_mesh := _add_hand_capsule(thumb_tip, "ThumbTip", 0.012, 0.045, Vector3(0.0, 0.0, -0.022), glove)
+    var thumb_tip_mesh := _add_hand_capsule(thumb_tip, "ThumbTip", 0.0115, 0.047, Vector3(0, 0, -0.023), glove)
     thumb_tip_mesh.rotation_degrees.x = 90.0
+
+    # Reinforced wrist cuff and a narrow seam ring.
+    var cuff := _add_hand_capsule(hand, "WristCuff", 0.041, 0.092, Vector3(0, 0, 0.105), rubber)
+    cuff.rotation_degrees.x = 90.0
+    var cuff_band := _add_hand_capsule(hand, "CuffBand", 0.043, 0.018, Vector3(0, 0, 0.075), seam)
+    cuff_band.rotation_degrees.x = 90.0
 
     if is_left:
         left_hand_fingers = finger_array
@@ -847,6 +858,29 @@ func _build_house(label: String, center: Vector3, wall_color: Color) -> void:
     _add_box(label + "_WindowB", Vector3(1.25, 1.0, 0.07), center + Vector3(1.6, 1.9, -2.81), Color(0.12, 0.22, 0.27))
     _add_box(label + "_WindowTrimA", Vector3(1.38, 0.08, 0.09), center + Vector3(-1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
     _add_box(label + "_WindowTrimB", Vector3(1.38, 0.08, 0.09), center + Vector3(1.6, 2.43, -2.83), Color(0.82, 0.79, 0.68))
+
+    # Architectural pass: foundation course, corner boards, window sills,
+    # door casing, porch landing, fascia and downspouts add depth to the shell.
+    _add_visual_box(label + "_FoundationFront", Vector3(7.45, 0.24, 0.22), center + Vector3(0, 0.16, -3.02), Color(0.29, 0.28, 0.25))
+    _add_visual_box(label + "_FoundationLeft", Vector3(0.22, 0.24, 5.95), center + Vector3(-3.77, 0.16, 0), Color(0.29, 0.28, 0.25))
+    _add_visual_box(label + "_FoundationRight", Vector3(0.22, 0.24, 5.95), center + Vector3(3.77, 0.16, 0), Color(0.29, 0.28, 0.25))
+    for side in [-1.0, 1.0]:
+        _add_visual_box(label + "_FrontCornerBoard", Vector3(0.13, 3.05, 0.10), center + Vector3(side * 3.58, 1.68, -3.04), Color(0.78, 0.75, 0.66))
+        _add_visual_box(label + "_WindowSill", Vector3(1.43, 0.09, 0.15), center + Vector3(side * 1.6, 1.36, -2.91), Color(0.83, 0.80, 0.70))
+        _add_visual_box(label + "_WindowJamb", Vector3(0.075, 1.08, 0.10), center + Vector3(side * 2.27, 1.88, -2.91), Color(0.83, 0.80, 0.70))
+    _add_visual_box(label + "_DoorJambLeft", Vector3(0.09, 2.18, 0.12), center + Vector3(-0.73, 1.15, -3.03), Color(0.82, 0.78, 0.67))
+    _add_visual_box(label + "_DoorJambRight", Vector3(0.09, 2.18, 0.12), center + Vector3(0.73, 1.15, -3.03), Color(0.82, 0.78, 0.67))
+    _add_visual_box(label + "_DoorHeaderTrim", Vector3(1.55, 0.10, 0.13), center + Vector3(0, 2.28, -3.03), Color(0.82, 0.78, 0.67))
+    _add_visual_box(label + "_PorchStep", Vector3(1.65, 0.16, 0.55), center + Vector3(0, 0.10, -3.34), Color(0.43, 0.42, 0.38))
+    _add_visual_box(label + "_RoofFasciaFront", Vector3(7.85, 0.20, 0.18), center + Vector3(0, 3.28, -3.13), Color(0.16, 0.15, 0.14))
+    _add_visual_box(label + "_RoofFasciaBack", Vector3(7.85, 0.20, 0.18), center + Vector3(0, 3.28, 3.13), Color(0.16, 0.15, 0.14))
+    for side in [-1.0, 1.0]:
+        _add_visual_box(label + "_Downspout", Vector3(0.07, 3.05, 0.07), center + Vector3(side * 3.69, 1.68, -2.91), Color(0.22, 0.23, 0.21))
+    # Subtle horizontal siding courses break up broad, flat wall surfaces.
+    for course in range(1, 6):
+        var y := 0.55 + float(course) * 0.43
+        _add_visual_box(label + "_SidingLine", Vector3(7.25, 0.018, 0.035), center + Vector3(0, y, -3.075), Color(0.48, 0.46, 0.40))
+
 
     _install_environment_model(label, center, "res://assets/models/environment/suburban_house.glb", Vector3.ONE)
     # Imported house meshes are the visible shell. Discard every stale collider
