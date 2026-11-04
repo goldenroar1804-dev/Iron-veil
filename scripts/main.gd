@@ -551,7 +551,6 @@ func _enhance_imported_materials(root: Node) -> void:
                 tuned.detail_enabled = true
                 tuned.detail_albedo = detail_texture
                 tuned.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
-                tuned.detail_uv1_scale = Vector3(14.0, 14.0, 1.0)
                 tuned.roughness = clampf(tuned.roughness * 0.92, 0.32, 0.96)
                 mesh_instance.set_surface_override_material(surface, tuned)
     for child in root.get_children():
