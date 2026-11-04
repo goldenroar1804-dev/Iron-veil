@@ -56,7 +56,7 @@ func _run() -> void:
                 return
 
     var origin := game.get_node("XROrigin3D") as XROrigin3D
-    origin.global_position = Vector3(-11.0, 0.0, -12.5)
+    origin.global_position = Vector3(-11.0, 0.0, -12.65)
     if not _check(bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, -0.02))), "Player collision query must detect the front house wall."):
         return
 
