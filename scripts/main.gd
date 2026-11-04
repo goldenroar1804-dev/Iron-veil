@@ -86,13 +86,18 @@ func _update_smooth_movement(delta: float) -> void:
     head_right = head_right.normalized()
     var move_direction := head_right * input_vector.x + head_forward * input_vector.y
     var displacement := move_direction * move_speed * delta
-    # XR origin movement is manual, so engine physics will not stop it by itself.
-    # Sweep a standing capsule before moving; try each axis separately for wall sliding.
-    if not _player_space_blocked(displacement):
-        xr_origin.global_position += displacement
-    else:
-        var slide_x := Vector3(displacement.x, 0.0, 0.0)
-        var slide_z := Vector3(0.0, 0.0, displacement.z)
+    # XR origin movement is manual, so subdivide large frame steps and test
+    # the standing capsule at each step. This prevents tunnelling through thin
+    # walls/fences during a frame hitch while preserving axis-based wall sliding.
+    var max_step := 0.12
+    var steps := maxi(1, ceili(displacement.length() / max_step))
+    var step_motion := displacement / float(steps)
+    for _step in range(steps):
+        if not _player_space_blocked(step_motion):
+            xr_origin.global_position += step_motion
+            continue
+        var slide_x := Vector3(step_motion.x, 0.0, 0.0)
+        var slide_z := Vector3(0.0, 0.0, step_motion.z)
         if not _player_space_blocked(slide_x):
             xr_origin.global_position += slide_x
         if not _player_space_blocked(slide_z):
@@ -957,10 +962,11 @@ func _animate_doors(delta: float) -> void:
 func _build_parked_car(label: String, center: Vector3, body_color: Color) -> void:
     _add_box(label + "_Body", Vector3(1.8, 0.72, 3.8), center + Vector3(0, 0.72, 0), body_color)
     _add_box(label + "_Cabin", Vector3(1.55, 0.72, 1.85), center + Vector3(0, 1.36, -0.15), Color(0.12, 0.18, 0.21))
+    var wheel_index := 0
     for x in [-0.92, 0.92]:
         for z in [-1.2, 1.2]:
             var wheel := MeshInstance3D.new()
-            wheel.name = label + "_Wheel"
+            wheel.name = label + "_Wheel_%d" % wheel_index
             var cylinder := CylinderMesh.new()
             cylinder.top_radius = 0.31
             cylinder.bottom_radius = 0.31
@@ -971,8 +977,9 @@ func _build_parked_car(label: String, center: Vector3, body_color: Color) -> voi
             wheel.material_override = _material(Color(0.035, 0.04, 0.04))
             add_child(wheel)
             var wheel_body := StaticBody3D.new()
-            wheel_body.name = label + "_WheelCollider"
+            wheel_body.name = label + "_WheelCollider_%d" % wheel_index
             wheel_body.position = wheel.position
+            wheel_body.rotation = wheel.rotation
             var wheel_collision := CollisionShape3D.new()
             var wheel_shape := CylinderShape3D.new()
             wheel_shape.radius = 0.31
@@ -980,6 +987,7 @@ func _build_parked_car(label: String, center: Vector3, body_color: Color) -> voi
             wheel_collision.shape = wheel_shape
             wheel_body.add_child(wheel_collision)
             add_child(wheel_body)
+            wheel_index += 1
     # Visual-only replacement: keep the original car and wheel colliders.
     _install_environment_model(label, center, "res://assets/models/environment/sedan.glb", Vector3.ONE)
 
@@ -998,7 +1006,7 @@ func _build_fence_segment(label: String, x: float, z: float) -> void:
 func _build_hedge(label: String, center: Vector3) -> void:
     # Keep one invisible broad collider for movement while rendering a varied,
     # rounded foliage mass rather than a rectangular green block.
-    var collider_visual := _add_box(label + "_CollisionVisual", Vector3(1.0, 0.85, 2.4), center, Color(0.12, 0.25, 0.13))
+    var collider_visual := _add_box(label + "_CollisionVisual", Vector3(0.82, 0.98, 2.4), center + Vector3(0.0, 0.46, 0.0), Color(0.12, 0.25, 0.13))
     collider_visual.visible = false
     for row in range(2):
         for col in range(5):
