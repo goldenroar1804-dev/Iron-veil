@@ -90,3 +90,10 @@ Validation additions — 2026-11-11
 
 2026-11-11 — Blender 5 FBX operator compatibility follow-up
 - Removed the obsolete FBX importer custom-normal option; Blender 5 rejects it. The Honey Badger conversion will rerun from the already uploaded source files.
+
+
+2026-11-11 — Direct Honey Badger FBX integration
+- Removed the Blender FBX conversion step because Blender 5's bundled FBX importer fails on the supplied Honey Badger file.
+- Godot now loads the supplied Honey Badger FBX directly, avoiding a lossy or fragile intermediate conversion.
+- Kept Blender conversion for the supplied Glock source, which exports successfully to GLB.
+- Model import workflow will install the supplied soldier GLB, Honey Badger FBX, and Glock GLB, then remove the temporary upload parts.
