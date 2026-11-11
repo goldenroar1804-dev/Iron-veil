@@ -109,3 +109,10 @@ Validation additions — 2026-11-11
 - Added the AAC Honey Badger FBX for direct Godot import as the primary weapon visual.
 - Added the Glock 17 Blender source for later sidearm conversion and integration.
 - Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
+
+
+2026-11-11 — Runtime asset cleanup
+- Removed the original Glock Blender source from the runtime project after successful GLB conversion; the game only needs the optimized GLB.
+- This prevents Godot's editor scan from trying to launch an unconfigured Blender executable for a development-only .blend file.
+- Updated the model importer so future imports retain only runtime-ready model files.
+- Soldier, Honey Badger FBX and Glock GLB remain in the game asset folders.
