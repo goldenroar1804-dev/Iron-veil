@@ -16,6 +16,7 @@ extends Node3D
 @onready var right_controller: XRController3D = $XROrigin3D/RightController
 
 var rifle: Node3D
+var rifle_body: RigidBody3D
 var fire_cooldown := 0.0
 var trigger_was_pressed := false
 var rifle_held := false
@@ -55,7 +56,7 @@ func _ready() -> void:
     add_child(paint_thinner_map)
     paint_thinner_map.build_map(self)
     # Start just inside the wide south entrance, facing into the CQB layout.
-    xr_origin.position = Vector3(0.0, 0.0, 14.0)
+    xr_origin.position = Vector3(0.0, 0.0, 9.5)
     _build_hands()
     _build_rifle()
     _build_audio()
@@ -152,6 +153,9 @@ func _make_human_hand(parent: Node3D, hand_name: String) -> void:
     hand.name = hand_name
     hand.position = Vector3(0.0, -0.018, -0.075)
     hand.quaternion = Quaternion.IDENTITY
+    # The palm surface is the local +Y side of the hand mesh. Rotate it inward:
+    # left palm faces +X, right palm faces -X, while fingers still point forward.
+    hand.rotation.z = deg_to_rad(-90.0 if is_left else 90.0)
     parent.add_child(hand)
     if is_left:
         left_hand_root = hand
@@ -275,8 +279,20 @@ func _add_hand_capsule(parent: Node3D, label: String, radius: float, length: flo
     return part
 
 func _build_rifle() -> void:
-    rifle = Node3D.new()
-    rifle.name = "M4A1_Carbine"
+    rifle_body = RigidBody3D.new()
+    rifle_body.name = "M4A1_Carbine"
+    rifle_body.mass = 3.1
+    rifle_body.gravity_scale = 1.0
+    rifle_body.freeze = true
+    rifle_body.collision_layer = 2
+    rifle_body.collision_mask = 1
+    var rifle_collision := CollisionShape3D.new()
+    var rifle_shape := BoxShape3D.new()
+    rifle_shape.size = Vector3(0.22, 0.62, 1.95)
+    rifle_collision.shape = rifle_shape
+    rifle_collision.position = Vector3(0.0, -0.10, -0.47)
+    rifle_body.add_child(rifle_collision)
+    rifle = rifle_body
     rifle.position = Vector3(0.025, -0.11, -0.22)
     rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
     add_child(rifle)
@@ -398,6 +414,8 @@ func _add_weapon_cylinder(parent: Node3D, label: String, radius: float, length: 
 func _update_weapon_grab(door_consumed_grip: bool = false) -> void:
     var right_grip := right_controller.is_button_pressed("grip") or right_controller.get_float("grip") > 0.55
     if not door_consumed_grip and not rifle_held and right_grip and right_controller.global_position.distance_to(rifle.global_position) < 0.65:
+        rifle_body.freeze = true
+        rifle_body.collision_mask = 0
         rifle.reparent(right_controller, false)
         rifle.position = Vector3(0.025, -0.11, -0.22)
         rifle.rotation_degrees = Vector3(-4.0, 0.0, 0.0)
@@ -406,6 +424,9 @@ func _update_weapon_grab(door_consumed_grip: bool = false) -> void:
         print("IRON VEIL: M4 grip acquired")
     elif rifle_held and grip_was_pressed and not right_grip:
         rifle.reparent(self, true)
+        rifle_body.freeze = false
+        rifle_body.sleeping = false
+        rifle_body.collision_mask = 1
         rifle_held = false
         right_controller.trigger_haptic_pulse("haptic", 0.55, 0.45, 0.10, 0.0)
         print("IRON VEIL: M4 released")
@@ -465,6 +486,7 @@ func _fire_rifle() -> void:
             enemy.notify_sound(muzzle)
     var direction := -rifle.global_transform.basis.z.normalized()
     var query := PhysicsRayQueryParameters3D.create(muzzle, muzzle + direction * shot_range)
+    query.exclude = [rifle_body.get_rid()]
     query.collide_with_areas = true
     var hit := get_world_3d().direct_space_state.intersect_ray(query)
     if not hit.is_empty():
@@ -493,47 +515,68 @@ func _create_muzzle_flash_png(tint: Color, brightness: float) -> Texture2D:
 func _build_audio() -> void:
     gun_audio = AudioStreamPlayer3D.new()
     gun_audio.name = "GunshotAudio"
-    gun_audio.volume_db = -2.0
-    gun_audio.max_distance = 65.0
-    gun_audio.unit_size = 18.0
+    gun_audio.volume_db = 0.0
+    gun_audio.max_distance = 90.0
+    gun_audio.unit_size = 22.0
     add_child(gun_audio)
 
     footstep_audio = AudioStreamPlayer3D.new()
     footstep_audio.name = "FootstepAudio"
-    footstep_audio.volume_db = -7.0
-    footstep_audio.max_distance = 18.0
-    footstep_audio.unit_size = 7.0
+    footstep_audio.volume_db = -3.0
+    footstep_audio.max_distance = 24.0
+    footstep_audio.unit_size = 8.0
     add_child(footstep_audio)
 
-    # CC0 audio downloads are cached locally after the first successful fetch.
-    gun_download = HTTPRequest.new()
-    gun_download.name = "CC0_Rifle_Sound_Download"
-    add_child(gun_download)
-    gun_download.request_completed.connect(_on_gun_sound_downloaded)
-    step_download = HTTPRequest.new()
-    step_download.name = "CC0_Footstep_Sound_Download"
-    add_child(step_download)
-    step_download.request_completed.connect(_on_footstep_sound_downloaded)
-    # Bundled/imported Godot audio takes priority. Network downloads remain a
-    # fallback for the original prototype and are cached in user:// as before.
-    var local_rifle_audio := _load_local_audio([
+    # Always provide a bundled-in-memory fallback: Quest can be offline and
+    # network downloads must never be required for core gameplay audio.
+    gun_audio.stream = _load_local_audio([
         "res://assets/audio/rifle_shot.ogg",
         "res://assets/audio/rifle_shot.wav",
         "res://assets/audio/rifle_shot.mp3"
     ])
-    var local_footstep_audio := _load_local_audio([
+    if gun_audio.stream == null:
+        gun_audio.stream = _make_procedural_audio("gun")
+
+    footstep_audio.stream = _load_local_audio([
         "res://assets/audio/footsteps_concrete.ogg",
         "res://assets/audio/footsteps_concrete.wav",
         "res://assets/audio/footsteps_concrete.mp3"
     ])
-    if local_rifle_audio != null:
-        gun_audio.stream = local_rifle_audio
-    else:
-        _load_or_download_sound("user://iron_veil_rifle.mp3", "https://sfxmint.com/dl/impact-gunshot-08.mp3", gun_download)
-    if local_footstep_audio != null:
-        footstep_audio.stream = local_footstep_audio
-    else:
-        _load_or_download_sound("user://iron_veil_steps.mp3", "https://sfxmint.com/dl/footsteps-concrete-75.mp3", step_download)
+    if footstep_audio.stream == null:
+        footstep_audio.stream = _make_procedural_audio("step")
+
+    print("IRON VEIL: audio ready | rifle=", gun_audio.stream != null, " | footsteps=", footstep_audio.stream != null)
+
+
+func _make_procedural_audio(kind: String) -> AudioStreamWAV:
+    var sample_rate := 22050
+    var duration := 0.34 if kind == "gun" else 0.19
+    var sample_count := int(sample_rate * duration)
+    var pcm := PackedByteArray()
+    pcm.resize(sample_count * 2)
+    for i in range(sample_count):
+        var t := float(i) / float(sample_rate)
+        var sample := 0.0
+        if kind == "gun":
+            var crack := exp(-t * 34.0)
+            var boom := exp(-t * 8.5)
+            var noise := randf_range(-1.0, 1.0)
+            sample = noise * crack * 0.72
+            sample += sin(TAU * 92.0 * t) * boom * 0.48
+            sample += sin(TAU * 740.0 * t) * crack * 0.16
+        else:
+            var envelope := exp(-t * 23.0) * (1.0 - exp(-t * 180.0))
+            sample = randf_range(-1.0, 1.0) * envelope * 0.24
+            sample += sin(TAU * 78.0 * t) * envelope * 0.72
+        sample = clampf(sample, -0.98, 0.98)
+        pcm.encode_s16(i * 2, int(sample * 32767.0))
+    var stream := AudioStreamWAV.new()
+    stream.format = AudioStreamWAV.FORMAT_16_BITS
+    stream.mix_rate = sample_rate
+    stream.stereo = false
+    stream.data = pcm
+    return stream
+
 
 func _load_local_audio(paths: Array[String]) -> AudioStream:
     for path in paths:
@@ -749,13 +792,13 @@ func _build_suburban_block() -> void:
 
 
 
-func _spawn_tactical_enemies() -> void:
+func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
     xr_camera.add_to_group("player_camera")
     var enemy_positions: Array[Vector3] = [
-        Vector3(-12.0, 0.05, -12.0),
-        Vector3(12.0, 0.05, -12.0),
-        Vector3(-12.0, 0.05, 9.0),
-        Vector3(12.0, 0.05, 9.0)
+        Vector3(-12.0 * map_scale, 0.05, -12.0 * map_scale),
+        Vector3(12.0 * map_scale, 0.05, -12.0 * map_scale),
+        Vector3(-12.0 * map_scale, 0.05, 9.0 * map_scale),
+        Vector3(12.0 * map_scale, 0.05, 9.0 * map_scale)
     ]
     var director_script := load("res://scripts/mission_director.gd") as Script
     if director_script != null:
@@ -782,29 +825,91 @@ func _spawn_tactical_enemies() -> void:
         collision.shape = capsule
         collision.position.y = 0.88
         enemy.add_child(collision)
-        var uniform := MeshInstance3D.new()
-        uniform.name = "Uniform"
-        var torso := CapsuleMesh.new()
-        torso.radius = 0.29
-        torso.height = 1.25
-        uniform.mesh = torso
-        uniform.position.y = 0.92
-        uniform.material_override = _material(Color(0.19, 0.22, 0.18))
-        enemy.add_child(uniform)
+        var humanoid := Node3D.new()
+        humanoid.name = "HumanoidVisual"
+        enemy.add_child(humanoid)
+        var uniform := _material(Color(0.105, 0.135, 0.105))
+        var armor := _material(Color(0.075, 0.085, 0.075))
+        var skin := _material(Color(0.38, 0.29, 0.22))
+        var cloth := _material(Color(0.17, 0.19, 0.15))
+        _add_enemy_capsule(humanoid, "Torso", 0.235, 0.72, Vector3(0, 1.10, 0), uniform)
+        _add_enemy_capsule(humanoid, "ShoulderLine", 0.105, 0.68, Vector3(0, 1.38, 0), cloth, Vector3(0, 0, deg_to_rad(90.0)))
+        _add_enemy_capsule(humanoid, "Pelvis", 0.17, 0.34, Vector3(0, 0.72, 0), armor)
+        for side in [-1.0, 1.0]:
+            var arm_angle := deg_to_rad(-10.0 * side)
+            _add_enemy_capsule(humanoid, "UpperArm_%s" % side, 0.085, 0.43, Vector3(side * 0.30, 1.12, 0.015), cloth, Vector3(0, 0, arm_angle))
+            _add_enemy_capsule(humanoid, "Forearm_%s" % side, 0.068, 0.38, Vector3(side * 0.39, 0.79, -0.025), uniform, Vector3(0, 0, arm_angle * 0.5))
+            _add_enemy_capsule(humanoid, "Thigh_%s" % side, 0.105, 0.48, Vector3(side * 0.115, 0.43, 0), uniform)
+            _add_enemy_capsule(humanoid, "Shin_%s" % side, 0.075, 0.43, Vector3(side * 0.12, 0.17, 0.015), cloth)
+            var boot := MeshInstance3D.new()
+            boot.name = "Boot_%s" % side
+            var boot_mesh := BoxMesh.new()
+            boot_mesh.size = Vector3(0.16, 0.10, 0.25)
+            boot.mesh = boot_mesh
+            boot.position = Vector3(side * 0.12, 0.055, -0.045)
+            boot.material_override = armor
+            humanoid.add_child(boot)
         var head := MeshInstance3D.new()
         head.name = "Head"
         var head_shape := SphereMesh.new()
-        head_shape.radius = 0.16
-        head_shape.height = 0.32
+        head_shape.radius = 0.145
+        head_shape.height = 0.29
+        head_shape.radial_segments = 20
+        head_shape.rings = 12
         head.mesh = head_shape
-        head.position.y = 1.68
-        head.material_override = _material(Color(0.34, 0.27, 0.21))
-        enemy.add_child(head)
-        enemy.set("body_mesh", uniform)
+        head.position = Vector3(0, 1.66, -0.015)
+        head.material_override = skin
+        humanoid.add_child(head)
+        var helmet := MeshInstance3D.new()
+        helmet.name = "CombatHelmet"
+        var helmet_mesh := SphereMesh.new()
+        helmet_mesh.radius = 0.17
+        helmet_mesh.height = 0.18
+        helmet_mesh.radial_segments = 20
+        helmet_mesh.rings = 10
+        helmet.mesh = helmet_mesh
+        helmet.position = Vector3(0, 1.79, 0.015)
+        helmet.scale = Vector3(1.0, 0.66, 1.0)
+        helmet.material_override = armor
+        humanoid.add_child(helmet)
+        var vest := MeshInstance3D.new()
+        vest.name = "PlateCarrier"
+        var vest_mesh := BoxMesh.new()
+        vest_mesh.size = Vector3(0.40, 0.46, 0.16)
+        vest.mesh = vest_mesh
+        vest.position = Vector3(0, 1.10, -0.14)
+        vest.material_override = armor
+        humanoid.add_child(vest)
+        for pouch_index in range(3):
+            var pouch := MeshInstance3D.new()
+            pouch.name = "MagazinePouch_%d" % pouch_index
+            var pouch_mesh := BoxMesh.new()
+            pouch_mesh.size = Vector3(0.09, 0.14, 0.055)
+            pouch.mesh = pouch_mesh
+            pouch.position = Vector3(-0.12 + float(pouch_index) * 0.12, 1.02, -0.235)
+            pouch.material_override = cloth
+            humanoid.add_child(pouch)
+        enemy.set("body_mesh", humanoid)
         enemy.set("head_mesh", head)
         add_child(enemy)
         if mission_director != null:
             mission_director.call("register_enemy", enemy)
+
+func _add_enemy_capsule(parent: Node3D, label: String, radius: float, height: float, location: Vector3, material: Material, angles: Vector3 = Vector3.ZERO) -> MeshInstance3D:
+    var part := MeshInstance3D.new()
+    part.name = label
+    var capsule_mesh := CapsuleMesh.new()
+    capsule_mesh.radius = radius
+    capsule_mesh.height = height
+    capsule_mesh.radial_segments = 16
+    capsule_mesh.rings = 8
+    part.mesh = capsule_mesh
+    part.position = location
+    part.rotation = Vector3(angles.x, angles.y, angles.z)
+    part.material_override = material
+    parent.add_child(part)
+    return part
+
 
 func _spawn_random_house_targets(house_name: String, center: Vector3) -> void:
     # Each house receives a randomized number and arrangement of indoor CQB targets.
