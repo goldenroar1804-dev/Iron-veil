@@ -78,7 +78,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend assets/models/weapons/glock17.glb LAST_UPDATED.txt
-          git add -u Iron_Veil_Newest_Branch_Asset_Pack.zip Iron_Veil_Model_Pack.part*
+          git add -u -- Iron_Veil_Model_Pack.part*
           if ! git diff --cached --quiet; then
             git commit -m "Import supplied soldier and weapon models"
             git push origin HEAD:feature/iron-veil-core-rebuild
