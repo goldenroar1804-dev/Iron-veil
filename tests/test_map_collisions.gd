@@ -19,8 +19,13 @@ func _run() -> void:
     root.add_child(game)
     await process_frame
     await physics_frame
+    var map_root := game.get_node_or_null("CompactPaintThinnerCQB") as Node3D
+    if not _check(map_root != null, "Compact scaled CQB map root must exist."):
+        return
+    if not _check(is_equal_approx(map_root.scale.x, 0.68) and is_equal_approx(map_root.scale.z, 0.68), "CQB footprint must be reduced to 68 percent horizontally."):
+        return
     for name in ["PT_ConcreteFloor_Collider", "PT_OuterNorth_Collider", "PT_OuterSouth_Collider", "PT_OuterWest_Collider", "PT_OuterEast_Collider"]:
-        if not _check(game.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
+        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
             return
     for name in ["PT_Partition_A_Collider", "PT_Partition_B_Collider", "PT_Partition_C_Collider", "PT_Partition_D_Collider", "PT_Partition_E_Collider", "PT_Partition_F_Collider", "PT_Partition_G_Collider", "PT_Partition_H_Collider"]:
         if not _check(game.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
