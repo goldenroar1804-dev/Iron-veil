@@ -35,3 +35,9 @@ Validation additions — 2026-11-11
 - Added visible procedural gait and aiming poses to arm and leg pivots so NPCs no longer move as rigid capsule figures.
 - Corrected the enemy visual root type so the complete articulated model can be lowered and rotated on elimination.
 - Meshy generation credits were preserved: Meshy reports model downloads are not available on the current plan, so no new generation or paid texture step was started. Existing repository GLB assets remain in use.
+
+
+2026-11-11 — In-headset tactical HUD
+- Added a compact head-locked status strip below the central sightline showing current magazine/reserve ammunition and remaining live PvE contacts.
+- HUD updates as rounds are fired, reloads complete, and enemies are eliminated; it requires no network connection or menu interaction.
+- Kept the feature lightweight for standalone Quest rendering using a single Label3D node.
