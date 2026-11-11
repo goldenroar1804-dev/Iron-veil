@@ -324,11 +324,19 @@ func _build_rifle() -> void:
 
     # Prefer a real imported GLB when one is installed; retain the Quest-friendly
     # procedural rifle as a fallback so the project remains runnable out of the box.
+    # Prefer the supplied compact AAC Honey Badger when it is installed.
+    # The existing M4 GLB remains the compatibility fallback.
     var has_imported_rifle := _try_add_imported_model(
         rifle,
-        "res://assets/models/weapons/m4_carbine.glb",
-        "ImportedM4Carbine"
+        "res://assets/models/weapons/aac_honeybadger.fbx",
+        "ImportedHoneyBadger"
     )
+    if not has_imported_rifle:
+        has_imported_rifle = _try_add_imported_model(
+            rifle,
+            "res://assets/models/weapons/m4_carbine.glb",
+            "ImportedM4Carbine"
+        )
     if not has_imported_rifle:
         var black := Color(0.045, 0.052, 0.048)
         var receiver := Color(0.105, 0.115, 0.105)
@@ -660,6 +668,18 @@ func _try_add_imported_model(parent: Node3D, path: String, instance_name: String
     _enhance_imported_materials(model)
     print("IRON VEIL: loaded imported model: ", path)
     return true
+
+
+
+func _play_imported_soldier_animation(model_root: Node) -> void:
+    var animation_player := model_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+    if animation_player == null:
+        return
+    for animation_name in animation_player.get_animation_list():
+        var normalized_name := animation_name.to_lower()
+        if normalized_name.contains("mixamo") and not normalized_name.contains("t-pose"):
+            animation_player.play(animation_name)
+            return
 
 func _enhance_imported_materials(root: Node) -> void:
     # Preserve each asset's authored albedo/normal/metallic textures, while
@@ -1032,6 +1052,17 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
 
         enemy.set("body_mesh", humanoid)
         enemy.set("head_mesh", head)
+
+        # Prefer the supplied skinned soldier asset when it is installed.
+        # Keep the articulated procedural character as a safe fallback.
+        if _try_add_imported_model(
+            enemy,
+            "res://assets/models/characters/military_soldier.glb",
+            "ImportedSoldierVisual"
+        ):
+            humanoid.visible = false
+            _play_imported_soldier_animation(enemy)
+
         add_child(enemy)
         enemy.connect("player_attacked", Callable(self, "_on_enemy_attacked_player"))
         if mission_director != null:
