@@ -6,6 +6,7 @@ on:
       - main
       - feature/pve-ai-vr-interactions
       - feature/paint-thinner-cqb-map
+      - feature/iron-veil-core-rebuild
   pull_request:
     branches:
       - main
