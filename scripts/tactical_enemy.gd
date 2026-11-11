@@ -4,6 +4,7 @@ extends CharacterBody3D
 
 enum BrainState { GUARD, INVESTIGATE, SEARCH, ENGAGE, RETREAT, DOWN }
 signal eliminated
+signal player_attacked(damage: int)
 @export var move_speed := 1.15
 @export var health := 3
 @export var guard_radius := 9.0
@@ -27,6 +28,7 @@ var strafe_sign := 1.0
 var body_mesh: Node3D
 var head_mesh: MeshInstance3D
 var humanoid_gait_phase := 0.0
+var attack_cooldown := 0.0
 
 func _ready() -> void:
     home_position = global_position
@@ -71,6 +73,7 @@ func _physics_process(delta: float) -> void:
     if target == null:
         return
 
+    attack_cooldown = maxf(0.0, attack_cooldown - delta)
     var to_player := target.global_position - global_position
     var distance := to_player.length()
     var can_see := distance < 22.0 and _has_line_of_sight(target.global_position)
@@ -149,6 +152,9 @@ func _physics_process(delta: float) -> void:
             desired = Vector3.ZERO
 
     desired.y = 0.0
+    if state == BrainState.ENGAGE and distance <= 18.0 and attack_cooldown <= 0.0:
+        _try_attack_player()
+
     if desired.length_squared() > 0.001:
         desired = desired.normalized()
         velocity.x = desired.x * move_speed
@@ -166,6 +172,21 @@ func _physics_process(delta: float) -> void:
     else:
         velocity.y = -0.05
     move_and_slide()
+
+
+func _try_attack_player() -> void:
+    if target == null or not is_instance_valid(target):
+        return
+    # A second, chest-height ray confirms the shot is not passing through
+    # cover. The player camera is the endpoint and is not a physics body.
+    var origin := global_position + Vector3.UP * 1.28
+    var query := PhysicsRayQueryParameters3D.create(origin, target.global_position)
+    query.exclude = [get_rid()]
+    var obstruction := get_world_3d().direct_space_state.intersect_ray(query)
+    if not obstruction.is_empty():
+        return
+    attack_cooldown = randf_range(1.35, 1.85)
+    player_attacked.emit(8)
 
 
 func _animate_humanoid(delta: float, down: bool) -> void:
