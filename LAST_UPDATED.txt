@@ -1,22 +1,13 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-03
+Last updated: 2026-11-11
 
-Latest implementation:
-- Corrected runtime hand axes so the fingers extend along the controller's forward (-Z) direction rather than toward the floor.
-- Grip input curls all fingers and the thumb; trigger input curls the index finger. A short haptic pulse confirms hand closure.
-- Rebuilt the M4-style GLB with rounded, smoothed components and PBR materials, replacing the prior hard-edged block assembly.
-- Kept the imported textured two-storey house and sedan models. Their authored PBR materials receive a subtle detail-texture layer.
-- Moved fences and hedges outside the house footprints.
-- Removed prototype and imported house physics nodes before rebuilding a clean playable collision shell.
-- Added interior stairs, a landing, and an upper-floor loft.
-- Added a runtime house cutaway pass that hides separate front-facade and roof mesh nodes when the imported GLB exposes them separately. The original textured GLB is retained; no texture-stripped replacement is used.
-- Door grip interaction checks distance to the actual handle, animates an AnimatableBody3D collider, toggles open/closed, and provides haptic feedback.
-- README and asset workflow were updated. Asset workflow run 41736194775 completed successfully.
+Map rebuild: Paint Thinner-inspired CQB interior
+- Startup now loads a new compact indoor close-quarters combat environment instead of the suburban street map.
+- Added a 34 m enclosed concrete shell, offset partitions, connected dog-legged corridors, narrow side rooms, and a broad unobstructed entry.
+- Added grungy plaster and damp skirting, scuffed floor patches, crude graffiti marks, scattered debris, lockers, damaged counters, and overturned furniture.
+- Added static collision to the floor, shell, room partitions, columns, and hard-cover props.
+- Kept the existing mission director and PvE enemy AI; moved all four enemies into the new interior footprint.
+- Replaced the old suburban collision audit with checks for the new CQB map.
+- Layout and atmosphere are original Iron Veil content inspired by Blood Trail's Paint Thinner map; no Blood Trail assets are used.
 
-Key commits:
-- Hand/door/house/landscaping fixes: 78cc6982613219e415981c60b0738d3d8fc5c275, ef4f310d0873791f49dee66afe351eaa09ea1416, 809efda36701ee3d7722fb5247882cc7a699f9e4, 1fd0880655575a60634fd4acc25ed7c666885f0e, 7645ff9f4d414350a7d84a66cec97ca86998ac49
-- Rounded weapon asset generator: 3f6055a0901209b8786bc6f6dc17349fa2702492
-- Bundled house/sedan/rifle/hand assets: f62dee9ce0a49b3c3febad9556188c52995cbbac
-- README: 54650952bf84664bdf8f16b47d0b23b7f1f9be48
-
-Godot editor import, static GDScript parsing, APK export, and physical Quest 3 testing have not been run. The cutaway depends on front-wall/roof panels being separate mesh nodes in the house GLB; verify the visual result, stair visibility, controller hand pose, and door collision in-headset.
+Validation status: source and test updates committed. Godot import, runtime checks, Android export, and Quest headset testing remain to be run.
