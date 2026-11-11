@@ -1254,14 +1254,14 @@ func _start_openxr() -> void:
     # Explicitly initialize it before enabling XR rendering for the viewport.
     var xr_interface := XRServer.find_interface("OpenXR")
     if xr_interface == null:
-        push_error("IRON VEIL: OpenXR interface is unavailable in this build. Check the Android XR export preset.")
+        push_warning("IRON VEIL: OpenXR interface is unavailable; continuing in non-XR mode for desktop/headless testing.")
         return
 
     if not xr_interface.is_initialized():
         print("IRON VEIL: Requesting OpenXR runtime initialization...")
         var initialized: bool = xr_interface.initialize()
         if not initialized:
-            push_error("IRON VEIL: OpenXR initialization failed. Confirm the app was installed and launched inside the Quest headset.")
+            push_warning("IRON VEIL: OpenXR initialization failed; continuing in non-XR mode. On Quest, verify the Android OpenXR loader and immersive launch metadata are present.")
             return
 
     get_viewport().use_xr = true
