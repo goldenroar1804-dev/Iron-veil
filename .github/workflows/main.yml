@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - feature/pve-ai-vr-interactions
+      - feature/paint-thinner-cqb-map
   pull_request:
     branches:
       - main
       - feature/pve-ai-vr-interactions
+      - feature/paint-thinner-cqb-map
   workflow_dispatch:
 
 jobs:
