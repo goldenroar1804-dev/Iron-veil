@@ -28,10 +28,10 @@ func _run() -> void:
         if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
             return
     for name in ["PT_Partition_A_Collider", "PT_Partition_B_Collider", "PT_Partition_C_Collider", "PT_Partition_D_Collider", "PT_Partition_E_Collider", "PT_Partition_F_Collider", "PT_Partition_G_Collider", "PT_Partition_H_Collider"]:
-        if not _check(game.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
+        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
             return
     for name in ["PT_BrokenCounter_A_Collider", "PT_BrokenCounter_B_Collider", "PT_OverturnedTable_Collider", "PT_LockerBank_Collider"]:
-        if not _check(game.get_node_or_null(name) is StaticBody3D, name + " must provide hard cover collision."):
+        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must provide hard cover collision."):
             return
     for enemy in range(4):
         if not _check(game.get_node_or_null("PvE_OpFor_%02d" % enemy) is CharacterBody3D, "All four CQB enemies must spawn inside the map."):
