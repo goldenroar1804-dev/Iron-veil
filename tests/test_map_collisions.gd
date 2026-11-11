@@ -39,9 +39,6 @@ func _run() -> void:
     if not _check(int(game.get("player_health")) == 100, "Player health must start at 100."):
         return
     var glock_display := game.get_node_or_null("Glock17_Display") as Node3D
-    if ResourceLoader.exists("res://assets/models/weapons/aac_honeybadger.fbx"):
-        if not _check(game.get_node_or_null("WeaponPickupStand") != null, "Honey Badger FBX source must be installed for the primary weapon visual."):
-            return false
     if ResourceLoader.exists("res://assets/models/weapons/glock17.glb"):
         if not _check(glock_display != null and glock_display.get_node_or_null("ImportedGlock17") != null, "Installed Glock asset must appear on the weapon pickup stand."):
             return
@@ -50,6 +47,9 @@ func _run() -> void:
         return
     if not _check(rifle.get_node_or_null("RiflePhysicsCollider") is CollisionShape3D, "The M4 must have a collision shape for dropping and floor impacts."):
         return
+    if ResourceLoader.exists("res://assets/models/weapons/aac_honeybadger.fbx"):
+        if not _check(rifle.get_node_or_null("ImportedHoneyBadger") != null, "Installed Honey Badger FBX must replace the procedural rifle visual."):
+            return
     var gun_audio := game.get_node_or_null("GunshotAudio") as AudioStreamPlayer3D
     var step_audio := game.get_node_or_null("FootstepAudio") as AudioStreamPlayer3D
     if not _check(gun_audio != null and gun_audio.stream != null, "Gunshot audio must be available offline."):
