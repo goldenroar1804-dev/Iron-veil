@@ -38,6 +38,10 @@ func _run() -> void:
         return
     if not _check(int(game.get("player_health")) == 100, "Player health must start at 100."):
         return
+    var glock_display := game.get_node_or_null("Glock17_Display") as Node3D
+    if ResourceLoader.exists("res://assets/models/weapons/glock17.glb"):
+        if not _check(glock_display != null and glock_display.get_node_or_null("ImportedGlock17") != null, "Installed Glock asset must appear on the weapon pickup stand."):
+            return
     var rifle := game.get_node_or_null("M4A1_Carbine") as RigidBody3D
     if not _check(rifle != null, "The M4 must be a physical rigid body."):
         return
