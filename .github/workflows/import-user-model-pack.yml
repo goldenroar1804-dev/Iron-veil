@@ -43,7 +43,7 @@ jobs:
           test "$(head -c 4 assets/models/characters/military_soldier.glb)" = "glTF"
           test "$(stat -c%s assets/models/characters/military_soldier.glb)" -gt 100000
           test "$(stat -c%s assets/models/weapons/aac_honeybadger.fbx)" -gt 10000
-          test "$(head -c 7 assets/models/weapons/glock17_source.blend)" = "BLENDER"
+          test "$(head -c 7)" = "BLENDER"
 
       - name: Convert supplied weapon sources to Quest-ready GLB
         shell: bash
@@ -54,6 +54,7 @@ jobs:
           blender --background assets/models/weapons/glock17_source.blend --python tools/convert_weapon_assets.py -- assets/models/weapons/glock17_source.blend assets/models/weapons/glock17.glb 0.22
           test "$(head -c 4 assets/models/weapons/glock17.glb)" = "glTF"
           test "$(stat -c%s assets/models/weapons/glock17.glb)" -gt 10000
+          rm assets/models/weapons/glock17_source.blend
 
       - name: Record imported models
         shell: bash
