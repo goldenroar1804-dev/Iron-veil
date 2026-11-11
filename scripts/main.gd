@@ -1250,12 +1250,22 @@ func _target_piece(parent: Node3D, label: String, dimensions: Vector3, location:
     parent.add_child(piece)
 
 func _start_openxr() -> void:
+    # OpenXR is not guaranteed to be initialized automatically on Android.
+    # Explicitly initialize it before enabling XR rendering for the viewport.
     var xr_interface := XRServer.find_interface("OpenXR")
-    if xr_interface and xr_interface.is_initialized():
-        get_viewport().use_xr = true
-        print("IRON VEIL: OpenXR initialized.")
-    else:
-        push_warning("IRON VEIL: OpenXR is not initialized. Check XR settings and launch on the headset.")
+    if xr_interface == null:
+        push_error("IRON VEIL: OpenXR interface is unavailable in this build. Check the Android XR export preset.")
+        return
+
+    if not xr_interface.is_initialized():
+        print("IRON VEIL: Requesting OpenXR runtime initialization...")
+        var initialized: bool = xr_interface.initialize()
+        if not initialized:
+            push_error("IRON VEIL: OpenXR initialization failed. Confirm the app was installed and launched inside the Quest headset.")
+            return
+
+    get_viewport().use_xr = true
+    print("IRON VEIL: OpenXR initialized; XR rendering enabled.")
 
 func _add_visual_box(label: String, dimensions: Vector3, location: Vector3, tint: Color) -> MeshInstance3D:
     var box := MeshInstance3D.new()
