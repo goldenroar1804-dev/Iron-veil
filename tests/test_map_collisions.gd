@@ -60,7 +60,12 @@ func _run() -> void:
         if not _check(npc != null, "All four CQB enemies must spawn inside the map."):
             return
         var humanoid := npc.get_node_or_null("HumanoidVisual") as Node3D
-        if not _check(humanoid != null and humanoid.get_child_count() >= 18, "Each NPC must have a multi-part humanoid silhouette, not a single capsule."):
-            return
+        var imported_soldier := npc.get_node_or_null("ImportedSoldierVisual") as Node3D
+        if ResourceLoader.exists("res://assets/models/characters/military_soldier.glb"):
+            if not _check(imported_soldier != null and humanoid != null and not humanoid.visible, "Installed soldier asset must replace the procedural NPC visual."):
+                return
+        else:
+            if not _check(humanoid != null and humanoid.get_child_count() >= 18, "Each NPC must retain the multipart humanoid fallback when the soldier asset is absent."):
+                return
     print("IRON VEIL: Paint Thinner-inspired CQB map collision audit passed.")
     quit(0)
