@@ -103,3 +103,9 @@ Validation additions — 2026-11-11
 - The asset conversion completed successfully, including the Glock GLB export, but cleanup staging referenced an optional ZIP that was never uploaded.
 - Corrected cleanup staging to remove only the ten uploaded part files; this allows the soldier, Honey Badger FBX, Glock source and converted Glock GLB to be committed.
 - Corrected the Honey Badger regression check to verify the imported model is attached to the rifle node.
+
+2026-11-11 — Supplied 3D model pack imported
+- Added the skinned military soldier GLB for PvE enemy visuals.
+- Added the AAC Honey Badger FBX for direct Godot import as the primary weapon visual.
+- Added the Glock 17 Blender source for later sidearm conversion and integration.
+- Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
