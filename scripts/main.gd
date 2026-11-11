@@ -329,7 +329,7 @@ func _build_rifle() -> void:
     # The existing M4 GLB remains the compatibility fallback.
     var has_imported_rifle := _try_add_imported_model(
         rifle,
-        "res://assets/models/weapons/aac_honeybadger.glb",
+        "res://assets/models/weapons/aac_honeybadger.fbx",
         "ImportedHoneyBadger"
     )
     if not has_imported_rifle:
