@@ -2,12 +2,15 @@ IRON VEIL repository update marker
 Last updated: 2026-11-11
 
 Map rebuild: Paint Thinner-inspired CQB interior
-- Startup now loads a new compact indoor close-quarters combat environment instead of the suburban street map.
-- Added a 34 m enclosed concrete shell, offset partitions, connected dog-legged corridors, narrow side rooms, and a broad unobstructed entry.
-- Added grungy plaster and damp skirting, scuffed floor patches, crude graffiti marks, scattered debris, lockers, damaged counters, and overturned furniture.
-- Added static collision to the floor, shell, room partitions, columns, and hard-cover props.
+- Startup now loads the original compact indoor close-quarters combat environment instead of the suburban street map.
+- Added an enclosed concrete shell, offset partitions, connected dog-legged corridors, narrow side rooms, and a broad south entry.
+- Player now starts just inside the entry facing into the map.
+- Added grungy plaster/skirting, procedural scuffed-floor details, graffiti marks, scattered debris, lockers, damaged counters, and overturned furniture.
+- Added static collision to floor, shell, room partitions, columns, and hard-cover props.
 - Kept the existing mission director and PvE enemy AI; moved all four enemies into the new interior footprint.
-- Replaced the old suburban collision audit with checks for the new CQB map.
-- Layout and atmosphere are original Iron Veil content inspired by Blood Trail's Paint Thinner map; no Blood Trail assets are used.
+- Consolidated lighting into one interior WorldEnvironment and reused the project's procedural detail texture on map surfaces.
+- Added a Meta Quest ARM64 Android export preset and a GitHub Actions workflow that builds and uploads a debug APK.
+- Automated Godot import, scene smoke, PvE regression, and map collision checks passed on the prior map commit; the latest lighting/spawn and APK export changes are pending a fresh run.
+- Original Iron Veil layout inspired by Blood Trail's Paint Thinner atmosphere; no Blood Trail assets are used.
 
-Validation status: source and test updates committed. Godot import, runtime checks, Android export, and Quest headset testing remain to be run.
+Validation status: awaiting latest automated checks and Android APK export workflow.
