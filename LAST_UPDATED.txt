@@ -50,3 +50,11 @@ Validation additions — 2026-11-11
 - This remains a prototype combat loop; actual headset feel, audio audibility, and balance still require in-headset playtesting.
 
 - Follow-up test correction: the clear-line-of-sight attack regression now runs after its temporary obstruction is removed, so it verifies a genuinely unobstructed shot.
+
+
+2026-11-11 — Supplied model style integration wiring
+- Prioritized the supplied AAC Honey Badger FBX for the primary weapon visual, retaining the existing M4 GLB as a fallback.
+- Added runtime loading for the supplied skinned military soldier GLB; when installed, it replaces the procedural NPC appearance and plays an available Mixamo animation. Procedural NPC visuals remain the clean-checkout fallback.
+- Extended the map regression test to verify the imported soldier replaces the fallback when the asset is present.
+- The binary files from the user-provided ZIP are not yet in the GitHub branch; the loader paths are ready, but the supplied assets must still be added to those paths before they can appear in a Quest build.
+- No APK build or headset test is claimed for this change.
