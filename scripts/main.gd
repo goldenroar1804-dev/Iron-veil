@@ -48,6 +48,7 @@ var left_trigger_was_pressed := false
 var rifle_ammo := 30
 var rifle_reserve_ammo := 90
 var mission_director: Node
+var ammo_hud: Label3D
 
 func _ready() -> void:
     _start_openxr()
@@ -60,6 +61,7 @@ func _ready() -> void:
     _build_hands()
     _build_rifle()
     _build_audio()
+    _build_hud()
 
 func _process(delta: float) -> void:
     if not _xr_is_active():
@@ -75,6 +77,7 @@ func _process(delta: float) -> void:
     _update_footsteps()
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
     _update_firing()
+    _update_hud()
 
 func _xr_is_active() -> bool:
     var xr_interface := XRServer.find_interface("OpenXR")
@@ -512,6 +515,34 @@ func _create_muzzle_flash_png(tint: Color, brightness: float) -> Texture2D:
                 color = Color(1.0, 0.92, 0.64, alpha)
             image.set_pixel(x, y, color)
     return ImageTexture.create_from_image(image)
+
+func _build_hud() -> void:
+    # A compact head-locked status strip keeps ammo and remaining contacts
+    # readable in VR without opening a menu or covering the centre sightline.
+    ammo_hud = Label3D.new()
+    ammo_hud.name = "TacticalStatusHUD"
+    ammo_hud.position = Vector3(0.0, -0.24, -0.95)
+    ammo_hud.font_size = 32
+    ammo_hud.pixel_size = 0.001
+    ammo_hud.outline_size = 8
+    ammo_hud.modulate = Color(0.78, 0.88, 0.72, 0.96)
+    ammo_hud.outline_modulate = Color(0.015, 0.02, 0.015, 0.95)
+    ammo_hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    ammo_hud.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+    ammo_hud.text = "IRON VEIL  |  AMMO 30 / 90  |  CONTACTS 4"
+    xr_camera.add_child(ammo_hud)
+
+
+func _update_hud() -> void:
+    if ammo_hud == null:
+        return
+    var remaining := 0
+    for enemy in get_tree().get_nodes_in_group("tactical_enemies"):
+        if is_instance_valid(enemy) and int(enemy.get("health")) > 0:
+            remaining += 1
+    var ammo_text := "RELOAD" if rifle_ammo <= 0 else "%02d / %02d" % [rifle_ammo, rifle_reserve_ammo]
+    ammo_hud.text = "IRON VEIL  |  AMMO %s  |  CONTACTS %d" % [ammo_text, remaining]
+
 
 func _build_audio() -> void:
     gun_audio = AudioStreamPlayer3D.new()
