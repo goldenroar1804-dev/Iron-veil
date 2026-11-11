@@ -6,13 +6,19 @@ const H := 3.15
 const T := 0.22
 var game_detail_texture: Texture2D
 
+const MAP_HORIZONTAL_SCALE := 0.68
+
 func build_map(game: Node3D) -> void:
     game_detail_texture = game.get("detail_texture") as Texture2D
-    _environment(game)
-    _shell(game)
-    _partitions(game)
-    _dressing(game)
-    game.call("_spawn_tactical_enemies")
+    var map_root := Node3D.new()
+    map_root.name = "CompactPaintThinnerCQB"
+    map_root.scale = Vector3(MAP_HORIZONTAL_SCALE, 1.0, MAP_HORIZONTAL_SCALE)
+    game.add_child(map_root)
+    _environment(map_root)
+    _shell(map_root)
+    _partitions(map_root)
+    _dressing(map_root)
+    game.call("_spawn_tactical_enemies", MAP_HORIZONTAL_SCALE)
 
 func _material(c: Color) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
