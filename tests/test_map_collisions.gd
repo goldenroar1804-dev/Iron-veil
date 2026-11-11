@@ -39,6 +39,9 @@ func _run() -> void:
     if not _check(int(game.get("player_health")) == 100, "Player health must start at 100."):
         return
     var glock_display := game.get_node_or_null("Glock17_Display") as Node3D
+    if ResourceLoader.exists("res://assets/models/weapons/aac_honeybadger.fbx"):
+        if not _check(game.get_node_or_null("WeaponPickupStand") != null, "Honey Badger FBX source must be installed for the primary weapon visual."):
+            return false
     if ResourceLoader.exists("res://assets/models/weapons/glock17.glb"):
         if not _check(glock_display != null and glock_display.get_node_or_null("ImportedGlock17") != null, "Installed Glock asset must appear on the weapon pickup stand."):
             return
