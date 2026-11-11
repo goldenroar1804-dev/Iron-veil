@@ -24,8 +24,9 @@ var investigate_timer := 0.0
 var search_timer := 0.0
 var decision_timer := 0.0
 var strafe_sign := 1.0
-var body_mesh: MeshInstance3D
+var body_mesh: Node3D
 var head_mesh: MeshInstance3D
+var humanoid_gait_phase := 0.0
 
 func _ready() -> void:
     home_position = global_position
@@ -59,6 +60,10 @@ func apply_hit(damage: int) -> void:
         eliminated.emit()
 
 func _physics_process(delta: float) -> void:
+    if state == BrainState.DOWN:
+        _animate_humanoid(delta, true)
+        return
+    _animate_humanoid(delta, false)
     if state == BrainState.DOWN:
         return
     if target == null or not is_instance_valid(target):
@@ -161,6 +166,35 @@ func _physics_process(delta: float) -> void:
     else:
         velocity.y = -0.05
     move_and_slide()
+
+
+func _animate_humanoid(delta: float, down: bool) -> void:
+    if body_mesh == null:
+        return
+    var movement := Vector2(velocity.x, velocity.z).length()
+    if movement > 0.08:
+        humanoid_gait_phase += delta * (5.0 + movement * 1.8)
+    var stride := sin(humanoid_gait_phase) * clampf(movement / maxf(move_speed, 0.1), 0.0, 1.0)
+    var left_leg := body_mesh.get_node_or_null("LeftLegPivot") as Node3D
+    var right_leg := body_mesh.get_node_or_null("RightLegPivot") as Node3D
+    var left_arm := body_mesh.get_node_or_null("LeftArmPivot") as Node3D
+    var right_arm := body_mesh.get_node_or_null("RightArmPivot") as Node3D
+    if left_leg != null:
+        left_leg.rotation.x = stride * 0.48
+    if right_leg != null:
+        right_leg.rotation.x = -stride * 0.48
+    var aiming := state == BrainState.ENGAGE or state == BrainState.RETREAT
+    if left_arm != null:
+        left_arm.rotation.x = 0.78 if aiming else -stride * 0.28
+    if right_arm != null:
+        right_arm.rotation.x = 0.88 if aiming else stride * 0.28
+    if down:
+        body_mesh.rotation_degrees.z = 82.0
+        body_mesh.position.y = 0.55
+    elif movement > 0.08:
+        body_mesh.position.y = 0.025 + absf(sin(humanoid_gait_phase * 2.0)) * 0.025
+    else:
+        body_mesh.position.y = move_toward(body_mesh.position.y, 0.0, delta * 0.12)
 
 
 func _find_nearby_cover(player_position: Vector3) -> Vector3:
