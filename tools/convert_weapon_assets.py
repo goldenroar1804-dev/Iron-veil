@@ -17,7 +17,7 @@ def import_source(source: Path):
         # Blender opened this file before running the script.
         return
     if suffix == ".fbx":
-        bpy.ops.import_scene.fbx(filepath=str(source), use_custom_normals=True)
+        bpy.ops.import_scene.fbx(filepath=str(source))
         return
     raise RuntimeError("Unsupported weapon source: " + suffix)
 
