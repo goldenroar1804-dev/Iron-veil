@@ -20,3 +20,9 @@ Validation status: Godot import, scene smoke, PvE regression, map collision chec
 - Replaced capsule-only NPC blobs with articulated humanoid silhouettes: torso, shoulder line, arms, forearms, pelvis, legs, boots, head, helmet and plate carrier.
 - Existing imported M4 model remains preferred for the rifle visuals; physical handling is now independent of the visual asset.
 - Automated Godot import, gameplay, collision and APK build checks must pass before headset validation.
+
+
+Validation additions — 2026-11-11
+- Map collision regression now resolves colliders under the scaled CQB root.
+- Added automated checks for offline rifle/footstep audio streams, inward-facing palm rotations, the rifle rigidbody and collision shape, and multipart humanoid NPC silhouettes.
+- Renamed the operation objective to match the CQB facility map.
