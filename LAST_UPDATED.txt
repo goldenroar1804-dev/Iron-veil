@@ -116,3 +116,5 @@ Validation additions — 2026-11-11
 - This prevents Godot's editor scan from trying to launch an unconfigured Blender executable for a development-only .blend file.
 - Updated the model importer so future imports retain only runtime-ready model files.
 - Soldier, Honey Badger FBX and Glock GLB remain in the game asset folders.
+
+- Final validation note: the 60.1 MB Quest debug APK was successfully exported and uploaded as GitHub Actions artifact Iron-Veil-Quest-APK.
