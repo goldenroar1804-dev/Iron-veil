@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   import-models:
-    if: ${{ hashFiles('incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip') != '' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out development branch
@@ -52,7 +51,7 @@ jobs:
           - Added the Glock 17 Blender source for later sidearm conversion and integration.
           - Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
           EOF
-          rm "$PACK"
+          rm "incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip"
 
       - name: Commit imported model assets
         shell: bash
