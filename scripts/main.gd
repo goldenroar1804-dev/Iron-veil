@@ -51,7 +51,9 @@ var mission_director: Node
 func _ready() -> void:
     _start_openxr()
     _setup_visual_quality()
-    _build_suburban_block()
+    var paint_thinner_map := preload("res://scripts/paint_thinner_map.gd").new()
+    add_child(paint_thinner_map)
+    paint_thinner_map.build_map(self)
     _build_hands()
     _build_rifle()
     _build_audio()
@@ -748,10 +750,10 @@ func _build_suburban_block() -> void:
 func _spawn_tactical_enemies() -> void:
     xr_camera.add_to_group("player_camera")
     var enemy_positions: Array[Vector3] = [
-        Vector3(-12.0, 0.05, -13.0),
-        Vector3(12.0, 0.05, -24.0),
-        Vector3(-12.0, 0.05, -43.0),
-        Vector3(12.0, 0.05, -62.0)
+        Vector3(-12.0, 0.05, -12.0),
+        Vector3(12.0, 0.05, -12.0),
+        Vector3(-12.0, 0.05, 9.0),
+        Vector3(12.0, 0.05, 9.0)
     ]
     var director_script := load("res://scripts/mission_director.gd") as Script
     if director_script != null:
