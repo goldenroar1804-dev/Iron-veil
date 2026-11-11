@@ -49,15 +49,20 @@ var rifle_ammo := 30
 var rifle_reserve_ammo := 90
 var mission_director: Node
 var ammo_hud: Label3D
+var player_health := 100
+var player_spawn_position := Vector3(0.0, 0.0, 9.5)
+var player_invulnerable_timer := 0.0
+var player_respawn_timer := 0.0
 
 func _ready() -> void:
+    add_to_group("iron_veil_game")
     _start_openxr()
     _setup_visual_quality()
     var paint_thinner_map := preload("res://scripts/paint_thinner_map.gd").new()
     add_child(paint_thinner_map)
     paint_thinner_map.build_map(self)
     # Start just inside the wide south entrance, facing into the CQB layout.
-    xr_origin.position = Vector3(0.0, 0.0, 9.5)
+    xr_origin.position = player_spawn_position
     _build_hands()
     _build_rifle()
     _build_audio()
@@ -66,6 +71,15 @@ func _ready() -> void:
 func _process(delta: float) -> void:
     if not _xr_is_active():
         return
+    if player_health <= 0:
+        player_respawn_timer = maxf(0.0, player_respawn_timer - delta)
+        if player_respawn_timer <= 0.0:
+            xr_origin.position = player_spawn_position
+            player_health = 65
+            player_invulnerable_timer = 2.5
+        _update_hud()
+        return
+    player_invulnerable_timer = maxf(0.0, player_invulnerable_timer - delta)
     _update_smooth_movement(delta)
     _update_smooth_turn(delta)
     _update_hand_pose()
@@ -533,6 +547,17 @@ func _build_hud() -> void:
     xr_camera.add_child(ammo_hud)
 
 
+func _on_enemy_attacked_player(damage: int) -> void:
+    if player_health <= 0 or player_invulnerable_timer > 0.0:
+        return
+    player_health = maxi(0, player_health - damage)
+    left_controller.trigger_haptic_pulse("haptic", 0.9, 0.8, 0.22, 0.0)
+    right_controller.trigger_haptic_pulse("haptic", 0.9, 0.8, 0.22, 0.0)
+    if player_health <= 0:
+        player_respawn_timer = 2.5
+        print("IRON VEIL: player down; recovering at operation entry")
+
+
 func _update_hud() -> void:
     if ammo_hud == null:
         return
@@ -541,7 +566,9 @@ func _update_hud() -> void:
         if is_instance_valid(enemy) and int(enemy.get("health")) > 0:
             remaining += 1
     var ammo_text := "RELOAD" if rifle_ammo <= 0 else "%02d / %02d" % [rifle_ammo, rifle_reserve_ammo]
-    ammo_hud.text = "IRON VEIL  |  AMMO %s  |  CONTACTS %d" % [ammo_text, remaining]
+    var status := "DOWN - RECOVERING" if player_health <= 0 else "HP %03d" % player_health
+    ammo_hud.modulate = Color(1.0, 0.32, 0.24, 1.0) if player_health <= 30 else Color(0.78, 0.88, 0.72, 0.96)
+    ammo_hud.text = "IRON VEIL  |  %s  |  AMMO %s  |  CONTACTS %d" % [status, ammo_text, remaining]
 
 
 func _build_audio() -> void:
@@ -1006,6 +1033,7 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
         enemy.set("body_mesh", humanoid)
         enemy.set("head_mesh", head)
         add_child(enemy)
+        enemy.connect("player_attacked", Callable(self, "_on_enemy_attacked_player"))
         if mission_director != null:
             mission_director.call("register_enemy", enemy)
 
