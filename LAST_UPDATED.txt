@@ -28,3 +28,10 @@ Validation additions — 2026-11-11
 - Renamed the operation objective to match the CQB facility map.
 
 - Named the rifle's physical collision shape explicitly for robust runtime verification.
+
+
+2026-11-11 — Humanoid character asset pass
+- Rebuilt PvE character silhouettes with layered tactical clothing, plate carrier straps, four magazine pouches and flaps, assault pack, shoulder pads, articulated arms and legs, knee/elbow protection, boots, neck, jaw, nose, ears, eyes, helmet band and side rails.
+- Added visible procedural gait and aiming poses to arm and leg pivots so NPCs no longer move as rigid capsule figures.
+- Corrected the enemy visual root type so the complete articulated model can be lowered and rotated on elimination.
+- Meshy generation credits were preserved: Meshy reports model downloads are not available on the current plan, so no new generation or paid texture step was started. Existing repository GLB assets remain in use.
