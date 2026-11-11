@@ -29,6 +29,8 @@ var body_mesh: Node3D
 var head_mesh: MeshInstance3D
 var humanoid_gait_phase := 0.0
 var attack_cooldown := 0.0
+const PLAYER_ATTACK_DAMAGE := 4
+const PLAYER_ATTACK_RANGE := 12.0
 
 func _ready() -> void:
     home_position = global_position
@@ -152,7 +154,7 @@ func _physics_process(delta: float) -> void:
             desired = Vector3.ZERO
 
     desired.y = 0.0
-    if state == BrainState.ENGAGE and distance <= 18.0 and attack_cooldown <= 0.0:
+    if state == BrainState.ENGAGE and distance <= PLAYER_ATTACK_RANGE and attack_cooldown <= 0.0:
         _try_attack_player()
 
     if desired.length_squared() > 0.001:
@@ -185,8 +187,8 @@ func _try_attack_player() -> void:
     var obstruction := get_world_3d().direct_space_state.intersect_ray(query)
     if not obstruction.is_empty():
         return
-    attack_cooldown = randf_range(1.35, 1.85)
-    player_attacked.emit(8)
+    attack_cooldown = randf_range(2.1, 2.8)
+    player_attacked.emit(PLAYER_ATTACK_DAMAGE)
 
 
 func _animate_humanoid(delta: float, down: bool) -> void:
