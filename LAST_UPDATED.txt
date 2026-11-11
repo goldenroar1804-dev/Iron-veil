@@ -68,3 +68,11 @@ Validation additions — 2026-11-11
 - Prevented the model import workflow from reprocessing its own asset-import commit when the uploaded ZIP is removed.
 
 - Simplified the upload step: place the ZIP in the repository root so it can be uploaded directly without creating an incoming folder.
+
+
+2026-11-11 — Supplied weapon model conversion and visual placement
+- Changed the Honey Badger runtime import to the Blender-converted GLB output so Godot consumes a consistent glTF scene on Quest.
+- Added the supplied Glock 17 as a visible secondary display model beside the rifle on the pickup stand. It is a visual display prop only; sidearm pickup, handling, and firing are not yet implemented.
+- Added a Blender-based conversion step to the model-pack workflow. It normalizes the Honey Badger to 0.95 m and Glock to 0.22 m before GLB export, then validates both outputs before committing them.
+- The soldier GLB is already scaled to approximately 1.87 m tall and contains Mixamo animation clips.
+- These integrations remain conditional on the user-supplied ZIP being uploaded to the development branch. No Quest headset test is claimed.
