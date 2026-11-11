@@ -41,3 +41,10 @@ Validation additions — 2026-11-11
 - Added a compact head-locked status strip below the central sightline showing current magazine/reserve ammunition and remaining live PvE contacts.
 - HUD updates as rounds are fired, reloads complete, and enemies are eliminated; it requires no network connection or menu interaction.
 - Kept the feature lightweight for standalone Quest rendering using a single Label3D node.
+
+
+2026-11-11 — PvE combat feedback pass
+- Added enemy hitscan attacks only while the player is visible, in range, and unobstructed by map cover; attack intervals vary to avoid perfectly regular damage.
+- Added player health display and damage haptics. At zero health the player is briefly downed, then recovers at the operation entry with partial health and temporary invulnerability.
+- Added automated checks for clear-line-of-sight enemy attack signaling, the tactical HUD, and starting player health.
+- This remains a prototype combat loop; actual headset feel, audio audibility, and balance still require in-headset playtesting.
