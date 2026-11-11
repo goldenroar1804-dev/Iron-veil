@@ -71,6 +71,9 @@ func _run() -> void:
         if ResourceLoader.exists("res://assets/models/characters/military_soldier.glb"):
             if not _check(imported_soldier != null and humanoid != null and not humanoid.visible, "Installed soldier asset must replace the procedural NPC visual."):
                 return
+            var soldier_animation := imported_soldier.find_child("AnimationPlayer", true, false) as AnimationPlayer
+            if not _check(soldier_animation != null and soldier_animation.is_playing(), "Imported soldier must start a motion clip after entering the scene tree."):
+                return
         else:
             if not _check(humanoid != null and humanoid.get_child_count() >= 18, "Each NPC must retain the multipart humanoid fallback when the soldier asset is absent."):
                 return
