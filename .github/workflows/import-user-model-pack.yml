@@ -43,7 +43,7 @@ jobs:
           test "$(head -c 4 assets/models/characters/military_soldier.glb)" = "glTF"
           test "$(stat -c%s assets/models/characters/military_soldier.glb)" -gt 100000
           test "$(stat -c%s assets/models/weapons/aac_honeybadger.fbx)" -gt 10000
-          test "$(head -c 7)" = "BLENDER"
+          test "$(head -c 7 assets/models/weapons/glock17_source.blend)" = "BLENDER"
 
       - name: Convert supplied weapon sources to Quest-ready GLB
         shell: bash
@@ -65,7 +65,7 @@ jobs:
           2026-11-11 — Supplied 3D model pack imported
           - Added the skinned military soldier GLB for PvE enemy visuals.
           - Added the AAC Honey Badger FBX for direct Godot import as the primary weapon visual.
-          - Added the Glock 17 Blender source for later sidearm conversion and integration.
+          - Converted the supplied Glock 17 source to a Quest-ready GLB display prop.
           - Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
           EOF
           rm "Iron_Veil_Newest_Branch_Asset_Pack.zip"
@@ -77,7 +77,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend assets/models/weapons/glock17.glb LAST_UPDATED.txt
+          git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17.glb LAST_UPDATED.txt
           git add -u -- Iron_Veil_Model_Pack.part*
           if ! git diff --cached --quiet; then
             git commit -m "Import supplied soldier and weapon models"
