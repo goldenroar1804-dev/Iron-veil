@@ -1,17 +1,10 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-11
 
-Map rebuild: Paint Thinner-inspired CQB interior
-- Startup now loads the original compact indoor close-quarters combat environment instead of the suburban street map.
-- Added an enclosed concrete shell, offset partitions, connected dog-legged corridors, narrow side rooms, and a broad south entry.
-- Player now starts just inside the entry facing into the map.
-- Added grungy plaster/skirting, procedural scuffed-floor details, graffiti marks, scattered debris, lockers, damaged counters, and overturned furniture.
-- Added static collision to floor, shell, room partitions, columns, and hard-cover props.
-- Kept the existing mission director and PvE enemy AI; moved all four enemies into the new interior footprint.
-- Consolidated lighting into one interior WorldEnvironment and reused the project's procedural detail texture on map surfaces.
-- Added a Meta Quest ARM64 Android export preset and a GitHub Actions workflow that builds and uploads a debug APK.
-- Automated Godot import, scene smoke, PvE regression, and map collision checks passed on the final map build.
-- Meta Quest ARM64 debug APK exported and uploaded successfully by GitHub Actions; ready for headset testing.
-- Original Iron Veil layout inspired by Blood Trail's Paint Thinner atmosphere; no Blood Trail assets are used.
+Quest OpenXR startup correction
+- Fixed the Android startup path to explicitly call OpenXR interface initialize() before enabling XR rendering.
+- Added clear error logging if the OpenXR interface is missing or runtime initialization fails.
+- Bumped Android version code to 2 so this corrected APK is distinguishable from the previous test build.
+- Existing Paint Thinner-inspired CQB map and PvE gameplay are unchanged.
 
-Validation status: automated checks and Quest APK export succeeded. Actual OpenXR tracking, headset frame rate, and physical interactions remain to be tested on Quest.
+Validation status: awaiting the new GitHub Actions Quest APK export. OpenXR runtime detection, controller tracking, and in-headset rendering still require confirmation on the physical Quest headset.
