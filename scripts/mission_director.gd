@@ -4,7 +4,7 @@ extends Node
 signal objective_updated(message: String)
 
 var hostiles_remaining := 0
-var operation_name := "OPERATION: SUBURBAN BREACH"
+var operation_name := "OPERATION: IRON VEIL CQB"
 var complete := false
 
 func start_operation(enemy_count: int) -> void:
@@ -22,7 +22,7 @@ func _on_enemy_eliminated() -> void:
     hostiles_remaining = maxi(0, hostiles_remaining - 1)
     if hostiles_remaining == 0:
         complete = true
-        _publish("OBJECTIVE COMPLETE | Suburban block secured")
+        _publish("OBJECTIVE COMPLETE | Facility secured")
     else:
         _publish("Clear the block | Hostiles remaining: %d" % hostiles_remaining)
 
