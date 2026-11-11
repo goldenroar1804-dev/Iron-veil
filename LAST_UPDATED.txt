@@ -3,10 +3,10 @@ Last updated: 2026-11-11
 
 Quest OpenXR startup and Android packaging correction
 - Explicitly initialize the OpenXR interface before enabling XR rendering in the main viewport.
-- Added clear startup errors when the OpenXR interface is unavailable or cannot initialize.
+- Gracefully continue in non-XR mode with a warning if no runtime is available, so desktop/headless CI can still run.
 - Enabled the Gradle Android build path so Godot can package the Android OpenXR loader and Quest immersive launch metadata.
-- CI now installs the Godot Android build template and checks the exported APK manifest for the Quest IMMERSIVE_HMD launch category.
+- CI installs the Godot Android build template and checks the exported APK manifest for the Quest IMMERSIVE_HMD launch category.
 - Android version code bumped to 2 for the corrected build.
 - Paint Thinner-inspired CQB map and existing PvE gameplay remain unchanged.
 
-Validation status: corrected Quest APK export and Android manifest validation are pending in GitHub Actions. Physical Quest runtime initialization, headset tracking, and in-headset rendering still require confirmation on the headset.
+Validation status: corrected Quest APK export, OpenXR manifest validation, and script checks are pending in GitHub Actions. Physical Quest runtime initialization, headset tracking, and in-headset rendering still require confirmation on the headset.
