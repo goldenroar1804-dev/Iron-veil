@@ -64,11 +64,15 @@ func _run() -> void:
     await physics_frame
 
     var attack_events := [0]
-    enemy.connect("player_attacked", func(_damage: int) -> void:
+    var attack_damage := [0]
+    enemy.connect("player_attacked", func(damage: int) -> void:
         attack_events[0] += 1
+        attack_damage[0] = damage
     )
     enemy.call("_try_attack_player")
     if not _check(attack_events[0] == 1, "An enemy with a clear line of sight should emit a player attack."):
+        return
+    if not _check(attack_damage[0] == 4, "Enemy attacks should deal the reduced, more survivable 4 damage."):
         return
 
     var squadmate := CharacterBody3D.new()
