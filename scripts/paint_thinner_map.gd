@@ -4,8 +4,10 @@ extends Node3D
 
 const H := 3.15
 const T := 0.22
+var game_detail_texture: Texture2D
 
 func build_map(game: Node3D) -> void:
+    game_detail_texture = game.get("detail_texture") as Texture2D
     _environment(game)
     _shell(game)
     _partitions(game)
@@ -16,6 +18,8 @@ func _material(c: Color) -> StandardMaterial3D:
     var m := StandardMaterial3D.new()
     m.albedo_color = c
     m.roughness = 0.96
+    if game_detail_texture != null:
+        m.albedo_texture = game_detail_texture
     return m
 
 func _box(parent: Node3D, label: String, size: Vector3, pos: Vector3, tint: Color, collision := true) -> void:
@@ -44,24 +48,12 @@ func _wall(parent: Node3D, label: String, size: Vector3, pos: Vector3, tint := C
         _box(parent, label + "_DampSkirting", Vector3(size.x, 0.30, size.z + 0.015), pos + Vector3(0, -1.12, 0), Color(tint.r * 0.58, tint.g * 0.56, tint.b * 0.52), false)
 
 func _environment(game: Node3D) -> void:
-    var env := Environment.new()
-    env.background_mode = Environment.BG_COLOR
-    env.background_color = Color(0.045, 0.043, 0.04)
-    env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color(0.48, 0.44, 0.38)
-    env.ambient_light_energy = 0.52
-    env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-    env.fog_enabled = true
-    env.fog_light_color = Color(0.19, 0.18, 0.16)
-    env.fog_density = 0.004
-    var world := WorldEnvironment.new()
-    world.name = "PaintThinner_InteriorEnvironment"
-    world.environment = env
-    game.add_child(world)
+    # The main scene owns the single WorldEnvironment. Keep this map-specific
+    # function to local fixtures only, avoiding competing WorldEnvironment nodes.
     var key := DirectionalLight3D.new()
     key.name = "DirtyWindowLight"
     key.rotation_degrees = Vector3(-58, 22, 0)
-    key.light_energy = 0.28
+    key.light_energy = 0.24
     key.light_color = Color(0.72, 0.68, 0.57)
     game.add_child(key)
     for p in [Vector3(-7, 2.65, -5), Vector3(7, 2.65, -5), Vector3(0, 2.65, 6)]:
