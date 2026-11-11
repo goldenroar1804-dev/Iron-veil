@@ -48,3 +48,5 @@ Validation additions — 2026-11-11
 - Added player health display and damage haptics. At zero health the player is briefly downed, then recovers at the operation entry with partial health and temporary invulnerability.
 - Added automated checks for clear-line-of-sight enemy attack signaling, the tactical HUD, and starting player health.
 - This remains a prototype combat loop; actual headset feel, audio audibility, and balance still require in-headset playtesting.
+
+- Follow-up test correction: the clear-line-of-sight attack regression now runs after its temporary obstruction is removed, so it verifies a genuinely unobstructed shot.
