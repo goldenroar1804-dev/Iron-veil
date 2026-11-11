@@ -97,3 +97,9 @@ Validation additions — 2026-11-11
 - Godot now loads the supplied Honey Badger FBX directly, avoiding a lossy or fragile intermediate conversion.
 - Kept Blender conversion for the supplied Glock source, which exports successfully to GLB.
 - Model import workflow will install the supplied soldier GLB, Honey Badger FBX, and Glock GLB, then remove the temporary upload parts.
+
+
+2026-11-11 — Import workflow commit-path correction
+- The asset conversion completed successfully, including the Glock GLB export, but cleanup staging referenced an optional ZIP that was never uploaded.
+- Corrected cleanup staging to remove only the ten uploaded part files; this allows the soldier, Honey Badger FBX, Glock source and converted Glock GLB to be committed.
+- Corrected the Honey Badger regression check to verify the imported model is attached to the rifle node.
