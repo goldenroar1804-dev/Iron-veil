@@ -1,0 +1,68 @@
+name: Import supplied Iron Veil model pack
+
+on:
+  push:
+    branches:
+      - feature/iron-veil-core-rebuild
+    paths:
+      - "incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip"
+
+permissions:
+  contents: write
+
+jobs:
+  import-models:
+    if: ${{ hashFiles('incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/iron-veil-core-rebuild
+          fetch-depth: 0
+
+      - name: Extract supplied models into game asset folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACK="incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip"
+          unzip -t "$PACK"
+          mkdir -p /tmp/iron-veil-model-pack
+          unzip -o "$PACK" "assets/models/characters/military_soldier.glb" -d /tmp/iron-veil-model-pack
+          unzip -o "$PACK" "assets/models/weapons/aac_honeybadger.fbx" -d /tmp/iron-veil-model-pack
+          unzip -o "$PACK" "assets/models/weapons/glock17_source.blend" -d /tmp/iron-veil-model-pack
+          mkdir -p assets/models/characters assets/models/weapons
+          cp /tmp/iron-veil-model-pack/assets/models/characters/military_soldier.glb assets/models/characters/
+          cp /tmp/iron-veil-model-pack/assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/
+          cp /tmp/iron-veil-model-pack/assets/models/weapons/glock17_source.blend assets/models/weapons/
+          test "$(head -c 4 assets/models/characters/military_soldier.glb)" = "glTF"
+          test "$(stat -c%s assets/models/characters/military_soldier.glb)" -gt 100000
+          test "$(stat -c%s assets/models/weapons/aac_honeybadger.fbx)" -gt 10000
+          test "$(head -c 7 assets/models/weapons/glock17_source.blend)" = "BLENDER"
+
+      - name: Record imported models
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >> LAST_UPDATED.txt <<'EOF'
+
+          2026-11-11 — Supplied 3D model pack imported
+          - Added the skinned military soldier GLB for PvE enemy visuals.
+          - Added the AAC Honey Badger FBX for the primary weapon visual.
+          - Added the Glock 17 Blender source for later sidearm conversion and integration.
+          - Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
+          EOF
+          rm "$PACK"
+
+      - name: Commit imported model assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend LAST_UPDATED.txt
+          git add -u incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip
+          if ! git diff --cached --quiet; then
+            git commit -m "Import supplied soldier and weapon models"
+            git push origin HEAD:feature/iron-veil-core-rebuild
+          fi
