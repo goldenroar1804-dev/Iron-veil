@@ -5,7 +5,7 @@ on:
     branches:
       - feature/iron-veil-core-rebuild
     paths:
-      - "Iron_Veil_Newest_Branch_Asset_Pack.zip"
+      - "Iron_Veil_Model_Pack.part*"
 
 permissions:
   contents: write
@@ -26,6 +26,10 @@ jobs:
         run: |
           set -euo pipefail
           PACK="Iron_Veil_Newest_Branch_Asset_Pack.zip"
+          PARTS=(Iron_Veil_Model_Pack.part*)
+          test "${#PARTS[@]}" -eq 10
+          for i in $(seq -w 1 10); do test -s "Iron_Veil_Model_Pack.part${i}"; done
+          cat "${PARTS[@]}" > "$PACK"
           unzip -t "$PACK"
           mkdir -p /tmp/iron-veil-model-pack
           unzip -o "$PACK" "assets/models/characters/military_soldier.glb" -d /tmp/iron-veil-model-pack
@@ -66,6 +70,7 @@ jobs:
           - Model import is automated from the supplied ZIP; Godot and Quest validation are handled by the project workflows.
           EOF
           rm "Iron_Veil_Newest_Branch_Asset_Pack.zip"
+          rm Iron_Veil_Model_Pack.part*
 
       - name: Commit imported model assets
         shell: bash
@@ -74,7 +79,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend assets/models/weapons/aac_honeybadger.glb assets/models/weapons/glock17.glb LAST_UPDATED.txt
-          git add -u Iron_Veil_Newest_Branch_Asset_Pack.zip
+          git add -u Iron_Veil_Newest_Branch_Asset_Pack.zip Iron_Veil_Model_Pack.part*
           if ! git diff --cached --quiet; then
             git commit -m "Import supplied soldier and weapon models"
             git push origin HEAD:feature/iron-veil-core-rebuild
