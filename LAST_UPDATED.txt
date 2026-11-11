@@ -58,3 +58,9 @@ Validation additions — 2026-11-11
 - Extended the map regression test to verify the imported soldier replaces the fallback when the asset is present.
 - The binary files from the user-provided ZIP are not yet in the GitHub branch; the loader paths are ready, but the supplied assets must still be added to those paths before they can appear in a Quest build.
 - No APK build or headset test is claimed for this change.
+
+
+2026-11-11 — Model pack upload bridge
+- Added a branch-only GitHub Actions importer that extracts the prepared soldier, Honey Badger and Glock assets into their intended project folders when the asset pack is uploaded to incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip.
+- The importer validates the model file signatures, updates this marker, removes the uploaded ZIP, and commits the extracted assets without touching main or the existing test APK.
+- Waiting for the asset pack upload before the supplied models can appear in a build.
