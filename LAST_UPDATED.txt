@@ -10,3 +10,13 @@ Quest OpenXR startup and Android packaging correction
 - Paint Thinner-inspired CQB map and existing PvE gameplay remain unchanged.
 
 Validation status: Godot import, scene smoke, PvE regression, map collision checks, corrected Quest APK export, and OpenXR manifest validation are being run in GitHub Actions. Physical Quest runtime initialization, headset tracking, and in-headset rendering still require confirmation on the headset.
+
+
+2026-11-11 — Core gameplay rebuild pass
+- Reduced Paint Thinner CQB footprint to 68% of its former horizontal size, with player spawn and enemy positions rescaled to remain inside the playable layout.
+- Rotated hand meshes so the left palm faces inward (+X) and the right palm faces inward (-X) while the fingers continue pointing forward.
+- Replaced the rifle root with a frozen-while-held RigidBody3D, with a physical collision shape; releasing it restores gravity and floor collision.
+- Added a guaranteed offline audio fallback generated as short PCM rifle and concrete-footstep sounds when no imported audio assets exist.
+- Replaced capsule-only NPC blobs with articulated humanoid silhouettes: torso, shoulder line, arms, forearms, pelvis, legs, boots, head, helmet and plate carrier.
+- Existing imported M4 model remains preferred for the rifle visuals; physical handling is now independent of the visual asset.
+- Automated Godot import, gameplay, collision and APK build checks must pass before headset validation.
