@@ -40,6 +40,19 @@ jobs:
           test "$(stat -c%s assets/models/weapons/aac_honeybadger.fbx)" -gt 10000
           test "$(head -c 7 assets/models/weapons/glock17_source.blend)" = "BLENDER"
 
+      - name: Convert supplied weapon sources to Quest-ready GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y blender
+          blender --background --python tools/convert_weapon_assets.py -- assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/aac_honeybadger.glb 0.95
+          blender --background assets/models/weapons/glock17_source.blend --python tools/convert_weapon_assets.py -- assets/models/weapons/glock17_source.blend assets/models/weapons/glock17.glb 0.22
+          test "$(head -c 4 assets/models/weapons/aac_honeybadger.glb)" = "glTF"
+          test "$(head -c 4 assets/models/weapons/glock17.glb)" = "glTF"
+          test "$(stat -c%s assets/models/weapons/aac_honeybadger.glb)" -gt 10000
+          test "$(stat -c%s assets/models/weapons/glock17.glb)" -gt 10000
+
       - name: Record imported models
         shell: bash
         run: |
@@ -60,7 +73,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend LAST_UPDATED.txt
+          git add assets/models/characters/military_soldier.glb assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/glock17_source.blend assets/models/weapons/aac_honeybadger.glb assets/models/weapons/glock17.glb LAST_UPDATED.txt
           git add -u Iron_Veil_Newest_Branch_Asset_Pack.zip
           if ! git diff --cached --quiet; then
             git commit -m "Import supplied soldier and weapon models"
