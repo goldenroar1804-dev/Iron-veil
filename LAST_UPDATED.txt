@@ -118,3 +118,10 @@ Validation additions — 2026-11-11
 - Soldier, Honey Badger FBX and Glock GLB remain in the game asset folders.
 
 - Final validation note: the 60.1 MB Quest debug APK was successfully exported and uploaded as GitHub Actions artifact Iron-Veil-Quest-APK.
+
+
+2026-11-11 — Quest gameplay fixes from headset recording
+- Fixed imported soldier animation startup order: the enemy now enters the active scene tree before its AnimationPlayer is started. The runtime selects the longest valid non-T-pose motion clip and loops it.
+- Increased ambient illumination, window key light, ceiling fixture energy and fixture reach; reduced dense fog so rooms and enemy silhouettes are easier to read in the headset.
+- Reduced enemy hitscan damage from 8 to 4, slowed attack cadence to 2.1–2.8 seconds and limited shots to 12 metres to make four-enemy CQB encounters more survivable.
+- Added regression coverage for the new enemy damage value and for imported soldier animation playback.
