@@ -36,7 +36,7 @@ func _run() -> void:
     var rifle := game.get_node_or_null("M4A1_Carbine") as RigidBody3D
     if not _check(rifle != null, "The M4 must be a physical rigid body."):
         return
-    if not _check(rifle.get_node_or_null("CollisionShape3D") is CollisionShape3D, "The M4 must have a collision shape for dropping and floor impacts."):
+    if not _check(rifle.get_node_or_null("RiflePhysicsCollider") is CollisionShape3D, "The M4 must have a collision shape for dropping and floor impacts."):
         return
     var gun_audio := game.get_node_or_null("GunshotAudio") as AudioStreamPlayer3D
     var step_audio := game.get_node_or_null("FootstepAudio") as AudioStreamPlayer3D
