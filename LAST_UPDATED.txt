@@ -10,7 +10,8 @@ Map rebuild: Paint Thinner-inspired CQB interior
 - Kept the existing mission director and PvE enemy AI; moved all four enemies into the new interior footprint.
 - Consolidated lighting into one interior WorldEnvironment and reused the project's procedural detail texture on map surfaces.
 - Added a Meta Quest ARM64 Android export preset and a GitHub Actions workflow that builds and uploads a debug APK.
-- Automated Godot import, scene smoke, PvE regression, and map collision checks passed on the prior map commit; the latest lighting/spawn and APK export changes are pending a fresh run.
+- Automated Godot import, scene smoke, PvE regression, and map collision checks passed on the final map build.
+- Meta Quest ARM64 debug APK exported and uploaded successfully by GitHub Actions; ready for headset testing.
 - Original Iron Veil layout inspired by Blood Trail's Paint Thinner atmosphere; no Blood Trail assets are used.
 
-Validation status: Godot source checks passed on earlier commits. Android export workflow corrected to avoid the retired Android SDK tools package and streamlined for Godot's prebuilt APK template; latest export run pending; removed Gradle-only SDK override fields and fixed the Godot editor settings resource header and configured a CI debug keystore for APK signing and enabled ETC2/ASTC texture import to resolve Godot 4.6 headless Android export validation.
+Validation status: automated checks and Quest APK export succeeded. Actual OpenXR tracking, headset frame rate, and physical interactions remain to be tested on Quest.
