@@ -54,6 +54,8 @@ func _ready() -> void:
     var paint_thinner_map := preload("res://scripts/paint_thinner_map.gd").new()
     add_child(paint_thinner_map)
     paint_thinner_map.build_map(self)
+    # Start just inside the wide south entrance, facing into the CQB layout.
+    xr_origin.position = Vector3(0.0, 0.0, 14.0)
     _build_hands()
     _build_rifle()
     _build_audio()
