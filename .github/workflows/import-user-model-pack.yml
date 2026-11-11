@@ -6,6 +6,7 @@ on:
       - feature/iron-veil-core-rebuild
     paths:
       - "Iron_Veil_Model_Pack.part*"
+      - "LAST_UPDATED.txt"
 
 permissions:
   contents: write
@@ -49,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y blender
+          sudo apt-get install -y blender python3-numpy
           blender --background --python tools/convert_weapon_assets.py -- assets/models/weapons/aac_honeybadger.fbx assets/models/weapons/aac_honeybadger.glb 0.95
           blender --background assets/models/weapons/glock17_source.blend --python tools/convert_weapon_assets.py -- assets/models/weapons/glock17_source.blend assets/models/weapons/glock17.glb 0.22
           test "$(head -c 4 assets/models/weapons/aac_honeybadger.glb)" = "glTF"
