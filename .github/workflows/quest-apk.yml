@@ -28,7 +28,7 @@ jobs:
       - name: Install Android export dependencies
         run: |
           yes | sdkmanager --licenses >/dev/null
-          sdkmanager "platform-tools" "build-tools;35.0.1" "platforms;android-35" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;28.1.13356709"
+          sdkmanager "build-tools;35.0.1" "platforms;android-35"
 
       - name: Install Godot 4.6 editor
         uses: chickensoft-games/setup-godot@v2
