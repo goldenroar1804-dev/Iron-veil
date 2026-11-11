@@ -65,6 +65,7 @@ func _ready() -> void:
     xr_origin.position = player_spawn_position
     _build_hands()
     _build_rifle()
+    _build_glock_display()
     _build_audio()
     _build_hud()
 
@@ -328,7 +329,7 @@ func _build_rifle() -> void:
     # The existing M4 GLB remains the compatibility fallback.
     var has_imported_rifle := _try_add_imported_model(
         rifle,
-        "res://assets/models/weapons/aac_honeybadger.fbx",
+        "res://assets/models/weapons/aac_honeybadger.glb",
         "ImportedHoneyBadger"
     )
     if not has_imported_rifle:
@@ -578,6 +579,16 @@ func _update_hud() -> void:
     ammo_hud.modulate = Color(1.0, 0.32, 0.24, 1.0) if player_health <= 30 else Color(0.78, 0.88, 0.72, 0.96)
     ammo_hud.text = "IRON VEIL  |  %s  |  AMMO %s  |  CONTACTS %d" % [status, ammo_text, remaining]
 
+
+func _build_glock_display() -> void:
+    # Visual-only secondary weapon prop until sidearm handling is implemented.
+    var display := Node3D.new()
+    display.name = "Glock17_Display"
+    display.position = rifle.global_position + Vector3(0.19, -0.36, 0.04)
+    display.rotation = rifle.global_rotation
+    add_child(display)
+    if not _try_add_imported_model(display, "res://assets/models/weapons/glock17.glb", "ImportedGlock17"):
+        display.queue_free()
 
 func _build_audio() -> void:
     gun_audio = AudioStreamPlayer3D.new()
