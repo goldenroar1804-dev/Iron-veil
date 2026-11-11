@@ -63,11 +63,18 @@ jobs:
       - name: Import project
         run: godot --headless --editor --path . --quit
 
-      - name: Export Meta Quest debug APK
+      - name: Install Godot Android Gradle build template
+        run: |
+          godot --headless --path . --install-android-build-template
+          test -d android/build
+
+      - name: Export Meta Quest debug APK with OpenXR Android loader
         run: |
           mkdir -p build
           godot --headless --path . --export-debug "Meta Quest" build/iron_veil_quest.apk
           test -s build/iron_veil_quest.apk
+          # Verify the APK declares the Quest immersive OpenXR launch category.
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump xmltree build/iron_veil_quest.apk AndroidManifest.xml | grep -q "org.khronos.openxr.intent.category.IMMERSIVE_HMD"
 
       - name: Upload Quest APK
         uses: actions/upload-artifact@v4
