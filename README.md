@@ -33,6 +33,9 @@ The GitHub Actions workflow `.github/workflows/import-cc0-assets.yml` downloads 
 - Left or right grip: curl the corresponding hand; grip near a door toggles it.
 - Right trigger: fire when holding the rifle; trigger also curls the index finger.
 
+## Build and install on Meta Quest
+A GitHub Actions workflow builds a debug APK for 64-bit Android/Quest and publishes it as the `Iron-Veil-Quest-APK` artifact. Open the Actions tab, select **Build Iron Veil Quest APK**, open the latest successful run, and download the artifact ZIP. Extract it and sideload `iron_veil_quest.apk` with your preferred Quest sideloading tool. The APK is a development build, not a store release.
+
 ## Open the project on Quest 3
 1. Download the repository ZIP from GitHub and extract it.
 2. Import the folder into Godot 4.6 with OpenXR enabled.
