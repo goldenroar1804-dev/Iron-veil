@@ -33,8 +33,29 @@ func _run() -> void:
     for name in ["PT_BrokenCounter_A_Collider", "PT_BrokenCounter_B_Collider", "PT_OverturnedTable_Collider", "PT_LockerBank_Collider"]:
         if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must provide hard cover collision."):
             return
+    var rifle := game.get_node_or_null("M4A1_Carbine") as RigidBody3D
+    if not _check(rifle != null, "The M4 must be a physical rigid body."):
+        return
+    if not _check(rifle.get_node_or_null("CollisionShape3D") is CollisionShape3D, "The M4 must have a collision shape for dropping and floor impacts."):
+        return
+    var gun_audio := game.get_node_or_null("GunshotAudio") as AudioStreamPlayer3D
+    var step_audio := game.get_node_or_null("FootstepAudio") as AudioStreamPlayer3D
+    if not _check(gun_audio != null and gun_audio.stream != null, "Gunshot audio must be available offline."):
+        return
+    if not _check(step_audio != null and step_audio.stream != null, "Footstep audio must be available offline."):
+        return
+    var left_hand := game.get_node_or_null("XROrigin3D/LeftController/LeftHumanHand") as Node3D
+    var right_hand := game.get_node_or_null("XROrigin3D/RightController/RightHumanHand") as Node3D
+    if not _check(left_hand != null and right_hand != null, "Both VR hands must be present."):
+        return
+    if not _check(is_equal_approx(left_hand.rotation.z, deg_to_rad(-90.0)) and is_equal_approx(right_hand.rotation.z, deg_to_rad(90.0)), "Palm normals must face inward toward one another."):
+        return
     for enemy in range(4):
-        if not _check(game.get_node_or_null("PvE_OpFor_%02d" % enemy) is CharacterBody3D, "All four CQB enemies must spawn inside the map."):
+        var npc := game.get_node_or_null("PvE_OpFor_%02d" % enemy) as CharacterBody3D
+        if not _check(npc != null, "All four CQB enemies must spawn inside the map."):
+            return
+        var humanoid := npc.get_node_or_null("HumanoidVisual") as Node3D
+        if not _check(humanoid != null and humanoid.get_child_count() >= 18, "Each NPC must have a multi-part humanoid silhouette, not a single capsule."):
             return
     print("IRON VEIL: Paint Thinner-inspired CQB map collision audit passed.")
     quit(0)
