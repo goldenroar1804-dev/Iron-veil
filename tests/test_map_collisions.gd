@@ -33,6 +33,11 @@ func _run() -> void:
     for name in ["PT_BrokenCounter_A_Collider", "PT_BrokenCounter_B_Collider", "PT_OverturnedTable_Collider", "PT_LockerBank_Collider"]:
         if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must provide hard cover collision."):
             return
+    var hud := game.get_node_or_null("XROrigin3D/XRCamera3D/TacticalStatusHUD") as Label3D
+    if not _check(hud != null and hud.text.contains("AMMO"), "The in-headset tactical HUD must be present and show ammunition."):
+        return
+    if not _check(int(game.get("player_health")) == 100, "Player health must start at 100."):
+        return
     var rifle := game.get_node_or_null("M4A1_Carbine") as RigidBody3D
     if not _check(rifle != null, "The M4 must be a physical rigid body."):
         return
