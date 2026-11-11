@@ -685,12 +685,29 @@ func _try_add_imported_model(parent: Node3D, path: String, instance_name: String
 func _play_imported_soldier_animation(model_root: Node) -> void:
     var animation_player := model_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
     if animation_player == null:
+        push_warning("IRON VEIL: imported soldier has no AnimationPlayer; using its bind pose.")
         return
+    var chosen_animation := ""
+    var longest_duration := 0.0
     for animation_name in animation_player.get_animation_list():
         var normalized_name := animation_name.to_lower()
-        if normalized_name.contains("mixamo") and not normalized_name.contains("t-pose"):
-            animation_player.play(animation_name)
-            return
+        if normalized_name.contains("t-pose") or normalized_name.contains("bind"):
+            continue
+        var clip := animation_player.get_animation(animation_name)
+        if clip == null or clip.get_track_count() == 0:
+            continue
+        # Prefer the longest authored motion clip over a short reference/rest
+        # clip, while excluding the explicit T-pose animation.
+        if clip.length > longest_duration:
+            longest_duration = clip.length
+            chosen_animation = animation_name
+    if chosen_animation.is_empty():
+        push_warning("IRON VEIL: imported soldier has no usable motion clip.")
+        return
+    var chosen_clip := animation_player.get_animation(chosen_animation)
+    chosen_clip.loop_mode = Animation.LOOP_LINEAR
+    animation_player.play(chosen_animation)
+    print("IRON VEIL: playing soldier animation ", chosen_animation, " (", longest_duration, "s)")
 
 func _enhance_imported_materials(root: Node) -> void:
     # Preserve each asset's authored albedo/normal/metallic textures, while
@@ -1066,15 +1083,20 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
 
         # Prefer the supplied skinned soldier asset when it is installed.
         # Keep the articulated procedural character as a safe fallback.
-        if _try_add_imported_model(
+        var has_imported_soldier := _try_add_imported_model(
             enemy,
             "res://assets/models/characters/military_soldier.glb",
             "ImportedSoldierVisual"
-        ):
+        )
+        if has_imported_soldier:
             humanoid.visible = false
-            _play_imported_soldier_animation(enemy)
 
+        # Add the complete enemy hierarchy to the active scene before starting
+        # imported animation playback. AnimationPlayer does not reliably advance
+        # a skinned GLB while its owner is still outside the scene tree.
         add_child(enemy)
+        if has_imported_soldier:
+            _play_imported_soldier_animation(enemy)
         enemy.connect("player_attacked", Callable(self, "_on_enemy_attacked_player"))
         if mission_director != null:
             mission_director.call("register_enemy", enemy)
@@ -1587,11 +1609,11 @@ func _setup_visual_quality() -> void:
     environment.background_color = Color(0.045, 0.043, 0.04)
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color(0.48, 0.44, 0.38)
-    environment.ambient_light_energy = 0.52
+    environment.ambient_light_energy = 0.92
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.fog_enabled = true
     environment.fog_light_color = Color(0.19, 0.18, 0.16)
-    environment.fog_density = 0.0035
+    environment.fog_density = 0.0018
     var world := WorldEnvironment.new()
     world.name = "PaintThinnerWorldEnvironment"
     world.environment = environment
