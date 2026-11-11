@@ -76,3 +76,5 @@ Validation additions — 2026-11-11
 - Added a Blender-based conversion step to the model-pack workflow. It normalizes the Honey Badger to 0.95 m and Glock to 0.22 m before GLB export, then validates both outputs before committing them.
 - The soldier GLB is already scaled to approximately 1.87 m tall and contains Mixamo animation clips.
 - These integrations remain conditional on the user-supplied ZIP being uploaded to the development branch. No Quest headset test is claimed.
+
+- Added tools/convert_weapon_assets.py, the Blender batch exporter used by the model import workflow to normalize and convert the supplied Honey Badger and Glock source files into GLB assets.
