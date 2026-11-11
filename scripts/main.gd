@@ -829,67 +829,149 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
         var humanoid := Node3D.new()
         humanoid.name = "HumanoidVisual"
         enemy.add_child(humanoid)
-        var uniform := _material(Color(0.105, 0.135, 0.105))
-        var armor := _material(Color(0.075, 0.085, 0.075))
-        var skin := _material(Color(0.38, 0.29, 0.22))
-        var cloth := _material(Color(0.17, 0.19, 0.15))
-        _add_enemy_capsule(humanoid, "Torso", 0.235, 0.72, Vector3(0, 1.10, 0), uniform)
-        _add_enemy_capsule(humanoid, "ShoulderLine", 0.105, 0.68, Vector3(0, 1.38, 0), cloth, Vector3(0, 0, deg_to_rad(90.0)))
-        _add_enemy_capsule(humanoid, "Pelvis", 0.17, 0.34, Vector3(0, 0.72, 0), armor)
+        var uniform := _material(Color(0.095, 0.12, 0.095))
+        var armor := _material(Color(0.055, 0.065, 0.058))
+        var skin := _material(Color(0.39, 0.29, 0.22))
+        var cloth := _material(Color(0.16, 0.18, 0.145))
+        var rubber := _material(Color(0.025, 0.03, 0.028))
+        var metal := _material(Color(0.22, 0.23, 0.21))
+        var webbing := _material(Color(0.24, 0.22, 0.16))
+
+        # Torso layers create a recognisable human outline under the kit.
+        _add_enemy_capsule(humanoid, "Torso", 0.205, 0.67, Vector3(0, 1.10, 0), uniform)
+        _add_enemy_capsule(humanoid, "UpperChest", 0.205, 0.37, Vector3(0, 1.31, -0.012), cloth)
+        _add_enemy_capsule(humanoid, "Pelvis", 0.155, 0.30, Vector3(0, 0.72, 0.015), uniform)
+        _add_enemy_capsule(humanoid, "Neck", 0.065, 0.16, Vector3(0, 1.52, 0), skin)
+
+        # Plate carrier, shoulder straps, rear pack, and individual pouches.
+        _add_enemy_capsule(humanoid, "PlateCarrier", 0.205, 0.49, Vector3(0, 1.14, -0.105), armor)
         for side in [-1.0, 1.0]:
-            var arm_angle := deg_to_rad(-10.0 * side)
-            _add_enemy_capsule(humanoid, "UpperArm_%s" % side, 0.085, 0.43, Vector3(side * 0.30, 1.12, 0.015), cloth, Vector3(0, 0, arm_angle))
-            _add_enemy_capsule(humanoid, "Forearm_%s" % side, 0.068, 0.38, Vector3(side * 0.39, 0.79, -0.025), uniform, Vector3(0, 0, arm_angle * 0.5))
-            _add_enemy_capsule(humanoid, "Thigh_%s" % side, 0.105, 0.48, Vector3(side * 0.115, 0.43, 0), uniform)
-            _add_enemy_capsule(humanoid, "Shin_%s" % side, 0.075, 0.43, Vector3(side * 0.12, 0.17, 0.015), cloth)
+            _add_enemy_capsule(humanoid, "CarrierStrap_%s" % side, 0.026, 0.39, Vector3(side * 0.135, 1.20, -0.19), webbing)
+            _add_enemy_capsule(humanoid, "ShoulderPad_%s" % side, 0.075, 0.23, Vector3(side * 0.245, 1.39, 0), armor, Vector3(0, 0, deg_to_rad(90.0)))
+        var pack := MeshInstance3D.new()
+        pack.name = "AssaultPack"
+        var pack_mesh := BoxMesh.new()
+        pack_mesh.size = Vector3(0.31, 0.42, 0.15)
+        pack.mesh = pack_mesh
+        pack.position = Vector3(0, 1.13, 0.145)
+        pack.material_override = uniform
+        humanoid.add_child(pack)
+        for pouch_index in range(4):
+            var pouch := MeshInstance3D.new()
+            pouch.name = "MagazinePouch_%d" % pouch_index
+            var pouch_mesh := BoxMesh.new()
+            pouch_mesh.size = Vector3(0.078, 0.135, 0.055)
+            pouch.mesh = pouch_mesh
+            pouch.position = Vector3(-0.13 + float(pouch_index) * 0.087, 1.06, -0.235)
+            pouch.material_override = cloth if pouch_index % 2 == 0 else webbing
+            humanoid.add_child(pouch)
+            var pouch_flap := MeshInstance3D.new()
+            pouch_flap.name = "PouchFlap_%d" % pouch_index
+            var flap_mesh := BoxMesh.new()
+            flap_mesh.size = Vector3(0.079, 0.025, 0.058)
+            pouch_flap.mesh = flap_mesh
+            pouch_flap.position = pouch.position + Vector3(0, 0.058, -0.004)
+            pouch_flap.material_override = armor
+            humanoid.add_child(pouch_flap)
+
+        # Articulated shoulder and hip pivots allow visible locomotion.
+        for side in [-1.0, 1.0]:
+            var side_name := "Left" if side < 0.0 else "Right"
+            var arm_pivot := Node3D.new()
+            arm_pivot.name = side_name + "ArmPivot"
+            arm_pivot.position = Vector3(side * 0.245, 1.39, 0.0)
+            humanoid.add_child(arm_pivot)
+            _add_enemy_capsule(arm_pivot, "UpperArm", 0.073, 0.39, Vector3(side * 0.025, -0.205, 0.0), cloth, Vector3(0, 0, deg_to_rad(-7.0 * side)))
+            _add_enemy_capsule(arm_pivot, "Elbow", 0.064, 0.12, Vector3(side * 0.035, -0.405, -0.008), uniform)
+            _add_enemy_capsule(arm_pivot, "Forearm", 0.057, 0.35, Vector3(side * 0.055, -0.59, -0.025), uniform, Vector3(0, 0, deg_to_rad(5.0 * side)))
+            _add_enemy_capsule(arm_pivot, "Glove", 0.047, 0.12, Vector3(side * 0.06, -0.815, -0.055), rubber)
+            var elbow_pad := MeshInstance3D.new()
+            elbow_pad.name = "ElbowPad"
+            var elbow_mesh := SphereMesh.new()
+            elbow_mesh.radius = 0.067
+            elbow_mesh.height = 0.07
+            elbow_pad.mesh = elbow_mesh
+            elbow_pad.position = Vector3(side * 0.035, -0.405, -0.055)
+            elbow_pad.material_override = armor
+            arm_pivot.add_child(elbow_pad)
+
+            var leg_pivot := Node3D.new()
+            leg_pivot.name = side_name + "LegPivot"
+            leg_pivot.position = Vector3(side * 0.105, 0.70, 0.0)
+            humanoid.add_child(leg_pivot)
+            _add_enemy_capsule(leg_pivot, "Thigh", 0.092, 0.43, Vector3(0, -0.215, 0), uniform)
+            _add_enemy_capsule(leg_pivot, "Knee", 0.078, 0.12, Vector3(0, -0.415, -0.018), cloth)
+            _add_enemy_capsule(leg_pivot, "Shin", 0.065, 0.37, Vector3(0, -0.61, 0.005), uniform)
+            var knee_pad := MeshInstance3D.new()
+            knee_pad.name = "KneePad"
+            var knee_mesh := SphereMesh.new()
+            knee_mesh.radius = 0.075
+            knee_mesh.height = 0.055
+            knee_pad.mesh = knee_mesh
+            knee_pad.position = Vector3(0, -0.415, -0.075)
+            knee_pad.material_override = armor
+            leg_pivot.add_child(knee_pad)
             var boot := MeshInstance3D.new()
-            boot.name = "Boot_%s" % side
-            var boot_mesh := BoxMesh.new()
-            boot_mesh.size = Vector3(0.16, 0.10, 0.25)
+            boot.name = "CombatBoot"
+            var boot_mesh := CapsuleMesh.new()
+            boot_mesh.radius = 0.075
+            boot_mesh.height = 0.22
             boot.mesh = boot_mesh
-            boot.position = Vector3(side * 0.12, 0.055, -0.045)
-            boot.material_override = armor
-            humanoid.add_child(boot)
+            boot.position = Vector3(0, -0.845, -0.065)
+            boot.rotation_degrees.x = 90.0
+            boot.material_override = rubber
+            leg_pivot.add_child(boot)
+
+        # Facial structure and helmet distinguish a human head from a featureless blob.
         var head := MeshInstance3D.new()
         head.name = "Head"
         var head_shape := SphereMesh.new()
-        head_shape.radius = 0.145
+        head_shape.radius = 0.132
         head_shape.height = 0.29
-        head_shape.radial_segments = 20
-        head_shape.rings = 12
+        head_shape.radial_segments = 24
+        head_shape.rings = 16
         head.mesh = head_shape
-        head.position = Vector3(0, 1.66, -0.015)
+        head.position = Vector3(0, 1.66, -0.018)
         head.material_override = skin
         humanoid.add_child(head)
+        _add_enemy_capsule(humanoid, "Jaw", 0.075, 0.11, Vector3(0, 1.585, -0.09), skin)
+        _add_enemy_capsule(humanoid, "Nose", 0.018, 0.055, Vector3(0, 1.66, -0.143), skin)
+        for side in [-1.0, 1.0]:
+            var ear := MeshInstance3D.new()
+            ear.name = "Ear_%s" % side
+            var ear_mesh := SphereMesh.new()
+            ear_mesh.radius = 0.032
+            ear_mesh.height = 0.055
+            ear.mesh = ear_mesh
+            ear.position = Vector3(side * 0.125, 1.66, -0.015)
+            ear.material_override = skin
+            humanoid.add_child(ear)
+            var eye := MeshInstance3D.new()
+            eye.name = "Eye_%s" % side
+            var eye_mesh := SphereMesh.new()
+            eye_mesh.radius = 0.012
+            eye_mesh.height = 0.014
+            eye.mesh = eye_mesh
+            eye.position = Vector3(side * 0.047, 1.685, -0.137)
+            eye.material_override = rubber
+            humanoid.add_child(eye)
+
         var helmet := MeshInstance3D.new()
         helmet.name = "CombatHelmet"
         var helmet_mesh := SphereMesh.new()
         helmet_mesh.radius = 0.17
         helmet_mesh.height = 0.18
-        helmet_mesh.radial_segments = 20
-        helmet_mesh.rings = 10
+        helmet_mesh.radial_segments = 24
+        helmet_mesh.rings = 16
         helmet.mesh = helmet_mesh
         helmet.position = Vector3(0, 1.79, 0.015)
         helmet.scale = Vector3(1.0, 0.66, 1.0)
         helmet.material_override = armor
         humanoid.add_child(helmet)
-        var vest := MeshInstance3D.new()
-        vest.name = "PlateCarrier"
-        var vest_mesh := BoxMesh.new()
-        vest_mesh.size = Vector3(0.40, 0.46, 0.16)
-        vest.mesh = vest_mesh
-        vest.position = Vector3(0, 1.10, -0.14)
-        vest.material_override = armor
-        humanoid.add_child(vest)
-        for pouch_index in range(3):
-            var pouch := MeshInstance3D.new()
-            pouch.name = "MagazinePouch_%d" % pouch_index
-            var pouch_mesh := BoxMesh.new()
-            pouch_mesh.size = Vector3(0.09, 0.14, 0.055)
-            pouch.mesh = pouch_mesh
-            pouch.position = Vector3(-0.12 + float(pouch_index) * 0.12, 1.02, -0.235)
-            pouch.material_override = cloth
-            humanoid.add_child(pouch)
+        _add_enemy_capsule(humanoid, "HelmetBand", 0.17, 0.045, Vector3(0, 1.75, 0.015), rubber, Vector3(0, 0, deg_to_rad(90.0)))
+        for side in [-1.0, 1.0]:
+            _add_enemy_capsule(humanoid, "HelmetRail_%s" % side, 0.018, 0.19, Vector3(side * 0.16, 1.79, 0.0), metal, Vector3(0, 0, deg_to_rad(90.0)))
+
         enemy.set("body_mesh", humanoid)
         enemy.set("head_mesh", head)
         add_child(enemy)
