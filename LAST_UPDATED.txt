@@ -86,3 +86,7 @@ Validation additions — 2026-11-11
 - Corrected the FBX import call for Blender 5.x, where the legacy global_scale operator option was removed.
 - Added the system NumPy package required by Blender's glTF exporter.
 - Re-run the import from the existing ten uploaded parts; no re-upload is required.
+
+
+2026-11-11 — Blender 5 FBX operator compatibility follow-up
+- Removed the obsolete FBX importer custom-normal option; Blender 5 rejects it. The Honey Badger conversion will rerun from the already uploaded source files.
