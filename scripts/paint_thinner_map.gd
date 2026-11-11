@@ -59,7 +59,7 @@ func _environment(game: Node3D) -> void:
     var key := DirectionalLight3D.new()
     key.name = "DirtyWindowLight"
     key.rotation_degrees = Vector3(-58, 22, 0)
-    key.light_energy = 0.24
+    key.light_energy = 0.42
     key.light_color = Color(0.72, 0.68, 0.57)
     game.add_child(key)
     for p in [Vector3(-7, 2.65, -5), Vector3(7, 2.65, -5), Vector3(0, 2.65, 6)]:
@@ -67,8 +67,8 @@ func _environment(game: Node3D) -> void:
         lamp.name = "WarmCeilingFixture"
         lamp.position = p
         lamp.light_color = Color(1.0, 0.72, 0.48)
-        lamp.light_energy = 0.52
-        lamp.omni_range = 8.0
+        lamp.light_energy = 0.95
+        lamp.omni_range = 10.0
         game.add_child(lamp)
 
 func _shell(game: Node3D) -> void:
