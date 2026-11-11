@@ -26,3 +26,5 @@ Validation additions — 2026-11-11
 - Map collision regression now resolves colliders under the scaled CQB root.
 - Added automated checks for offline rifle/footstep audio streams, inward-facing palm rotations, the rifle rigidbody and collision shape, and multipart humanoid NPC silhouettes.
 - Renamed the operation objective to match the CQB facility map.
+
+- Named the rifle's physical collision shape explicitly for robust runtime verification.
