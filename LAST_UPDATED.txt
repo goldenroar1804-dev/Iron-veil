@@ -61,8 +61,10 @@ Validation additions — 2026-11-11
 
 
 2026-11-11 — Model pack upload bridge
-- Added a branch-only GitHub Actions importer that extracts the prepared soldier, Honey Badger and Glock assets into their intended project folders when the asset pack is uploaded to incoming/Iron_Veil_Newest_Branch_Asset_Pack.zip.
+- Added a branch-only GitHub Actions importer that extracts the prepared soldier, Honey Badger and Glock assets into their intended project folders when the asset pack is uploaded to Iron_Veil_Newest_Branch_Asset_Pack.zip.
 - The importer validates the model file signatures, updates this marker, removes the uploaded ZIP, and commits the extracted assets without touching main or the existing test APK.
 - Waiting for the asset pack upload before the supplied models can appear in a build.
 
 - Prevented the model import workflow from reprocessing its own asset-import commit when the uploaded ZIP is removed.
+
+- Simplified the upload step: place the ZIP in the repository root so it can be uploaded directly without creating an incoming folder.
