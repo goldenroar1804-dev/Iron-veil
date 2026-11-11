@@ -1282,18 +1282,17 @@ func _add_box(label: String, dimensions: Vector3, location: Vector3, tint: Color
 
 func _setup_visual_quality() -> void:
     var environment := Environment.new()
-    environment.background_mode = Environment.BG_SKY
-    var sky := Sky.new()
-    sky.sky_material = ProceduralSkyMaterial.new()
-    environment.sky = sky
-    environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-    environment.ambient_light_energy = 0.7
+    environment.background_mode = Environment.BG_COLOR
+    environment.background_color = Color(0.045, 0.043, 0.04)
+    environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+    environment.ambient_light_color = Color(0.48, 0.44, 0.38)
+    environment.ambient_light_energy = 0.52
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.fog_enabled = true
-    environment.fog_light_color = Color(0.57, 0.64, 0.68)
-    environment.fog_density = 0.0018
+    environment.fog_light_color = Color(0.19, 0.18, 0.16)
+    environment.fog_density = 0.0035
     var world := WorldEnvironment.new()
-    world.name = "SuburbanWorldEnvironment"
+    world.name = "PaintThinnerWorldEnvironment"
     world.environment = environment
     add_child(world)
 
