@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   import-models:
+    if: ${{ !contains(github.event.head_commit.message, 'Import supplied soldier and weapon models') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out development branch
