@@ -287,6 +287,7 @@ func _build_rifle() -> void:
     rifle_body.collision_layer = 2
     rifle_body.collision_mask = 1
     var rifle_collision := CollisionShape3D.new()
+    rifle_collision.name = "RiflePhysicsCollider"
     var rifle_shape := BoxShape3D.new()
     rifle_shape.size = Vector3(0.22, 0.62, 1.95)
     rifle_collision.shape = rifle_shape
