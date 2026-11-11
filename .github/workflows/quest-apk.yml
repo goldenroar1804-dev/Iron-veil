@@ -38,15 +38,17 @@ jobs:
 
       - name: Install Godot export templates
         run: |
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.stable"
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.stable" /tmp/godot-templates
           curl -L --fail -o /tmp/godot-templates.tpz "https://github.com/godotengine/godot/releases/download/4.6-stable/Godot_v4.6-stable_export_templates.tpz"
-          unzip -oq /tmp/godot-templates.tpz -d "$HOME/.local/share/godot/export_templates/4.6.stable"
+          unzip -oq /tmp/godot-templates.tpz -d /tmp/godot-templates
+          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.6.stable/"
 
       - name: Configure Godot Android paths
         shell: bash
         run: |
           mkdir -p "$HOME/.config/godot"
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          config_version=5
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
