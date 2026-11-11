@@ -43,16 +43,21 @@ jobs:
           unzip -oq /tmp/godot-templates.tpz -d /tmp/godot-templates
           cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.6.stable/"
 
-      - name: Configure Godot Android paths
+      - name: Configure Godot Android paths and debug signing
         shell: bash
         run: |
-          mkdir -p "$HOME/.config/godot"
+          mkdir -p "$HOME/.config/godot" "$HOME/.android"
+          keytool -genkeypair -alias androiddebugkey -keypass android -keystore "$HOME/.android/debug.keystore" -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -keyalg RSA -keysize 2048
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          export/android/force_system_user = false
           EOF
 
       - name: Import project
