@@ -80,3 +80,9 @@ Validation additions — 2026-11-11
 - Added tools/convert_weapon_assets.py, the Blender batch exporter used by the model import workflow to normalize and convert the supplied Honey Badger and Glock source files into GLB assets.
 
 - Updated the model importer to accept the model pack as ten small numbered part files, reassemble them in GitHub Actions, then install the models and remove the uploaded parts.
+
+
+2026-11-11 — Model importer compatibility fix
+- Corrected the FBX import call for Blender 5.x, where the legacy global_scale operator option was removed.
+- Added the system NumPy package required by Blender's glTF exporter.
+- Re-run the import from the existing ten uploaded parts; no re-upload is required.
