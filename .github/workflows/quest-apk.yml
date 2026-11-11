@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/paint-thinner-cqb-map
+      - feature/iron-veil-core-rebuild
   workflow_dispatch:
 
 jobs:
