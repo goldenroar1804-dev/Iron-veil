@@ -6,7 +6,6 @@ on:
       - feature/iron-veil-core-rebuild
     paths:
       - "Iron_Veil_Model_Pack.part*"
-      - "tools/convert_weapon_assets.py"
 
 permissions:
   contents: write

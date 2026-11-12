@@ -11,6 +11,15 @@ func _check(condition: bool, message: String) -> bool:
         return false
     return true
 
+func _check_static_collider(map_root: Node3D, collider_name: String) -> bool:
+    var body := map_root.get_node_or_null(collider_name) as StaticBody3D
+    if body == null:
+        return _check(false, collider_name + " must have static collision.")
+    var collision := body.get_node_or_null("CollisionShape3D") as CollisionShape3D
+    if collision == null:
+        return _check(false, collider_name + " must contain a CollisionShape3D.")
+    return _check(collision.shape != null and not collision.disabled, collider_name + " must contain an enabled collision shape.")
+
 func _run() -> void:
     var packed := load("res://scenes/main.tscn") as PackedScene
     if not _check(packed != null, "Main scene must load."):
@@ -24,14 +33,28 @@ func _run() -> void:
         return
     if not _check(is_equal_approx(map_root.scale.x, 0.68) and is_equal_approx(map_root.scale.z, 0.68), "CQB footprint must be reduced to 68 percent horizontally."):
         return
-    for name in ["PT_ConcreteFloor_Collider", "PT_OuterNorth_Collider", "PT_OuterSouth_Collider", "PT_OuterWest_Collider", "PT_OuterEast_Collider"]:
-        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
-            return
-    for name in ["PT_Partition_A_Collider", "PT_Partition_B_Collider", "PT_Partition_C_Collider", "PT_Partition_D_Collider", "PT_Partition_E_Collider", "PT_Partition_F_Collider", "PT_Partition_G_Collider", "PT_Partition_H_Collider"]:
-        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must have static collision."):
-            return
-    for name in ["PT_BrokenCounter_A_Collider", "PT_BrokenCounter_B_Collider", "PT_OverturnedTable_Collider", "PT_LockerBank_Collider"]:
-        if not _check(map_root.get_node_or_null(name) is StaticBody3D, name + " must provide hard cover collision."):
+    # Audit every fixed structural and hard-cover collider, not just the outer
+    # shell and the first row of partitions. Decorative scuffs, graffiti and
+    # loose debris intentionally remain non-colliding.
+    var required_static_colliders := [
+        "PT_ConcreteFloor_Collider", "PT_Ceiling_Collider",
+        "PT_OuterNorth_Collider", "PT_OuterSouth_Collider",
+        "PT_OuterWest_Collider", "PT_OuterEast_Collider",
+        "PT_EntryLeft_Collider", "PT_EntryRight_Collider",
+        "PT_Partition_A_Collider", "PT_Partition_B_Collider",
+        "PT_Partition_C_Collider", "PT_Partition_D_Collider",
+        "PT_Partition_E_Collider", "PT_Partition_F_Collider",
+        "PT_Partition_G_Collider", "PT_Partition_H_Collider",
+        "PT_Return_01_Collider", "PT_Return_02_Collider",
+        "PT_Return_03_Collider", "PT_Return_04_Collider",
+        "PT_ConcreteColumn_00_Collider", "PT_ConcreteColumn_01_Collider",
+        "PT_ConcreteColumn_02_Collider", "PT_ConcreteColumn_03_Collider",
+        "PT_ConcreteColumn_04_Collider", "PT_ConcreteColumn_05_Collider",
+        "PT_BrokenCounter_A_Collider", "PT_BrokenCounter_B_Collider",
+        "PT_OverturnedTable_Collider", "PT_LockerBank_Collider"
+    ]
+    for collider_name in required_static_colliders:
+        if not _check_static_collider(map_root, collider_name):
             return
     var hud := game.get_node_or_null("XROrigin3D/XRCamera3D/TacticalStatusHUD") as Label3D
     if not _check(hud != null and hud.text.contains("AMMO"), "The in-headset tactical HUD must be present and show ammunition."):

@@ -1,5 +1,5 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 Quest OpenXR startup and Android packaging correction
 - Explicitly initialize the OpenXR interface before enabling XR rendering in the main viewport.
@@ -125,3 +125,9 @@ Validation additions — 2026-11-11
 - Increased ambient illumination, window key light, ceiling fixture energy and fixture reach; reduced dense fog so rooms and enemy silhouettes are easier to read in the headset.
 - Reduced enemy hitscan damage from 8 to 4, slowed attack cadence to 2.1–2.8 seconds and limited shots to 12 metres to make four-enemy CQB encounters more survivable.
 - Added regression coverage for the new enemy damage value and for imported soldier animation playback.
+
+
+2026-11-12 — CI trigger and CQB collision audit hardening
+- Restricted the supplied-model importer trigger to the ten uploaded archive-part files; changing the Blender conversion script alone can no longer start an import job without its required source archive.
+- Expanded the CQB map regression test to require an enabled CollisionShape3D on the ceiling, entry segments, return walls, all six concrete columns, partitions, outer shell and hard-cover props.
+- No gameplay or asset changes were made in this audit pass.
