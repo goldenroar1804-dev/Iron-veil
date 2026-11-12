@@ -15,7 +15,11 @@ func _check_static_collider(map_root: Node3D, collider_name: String) -> bool:
     var body := map_root.get_node_or_null(collider_name) as StaticBody3D
     if body == null:
         return _check(false, collider_name + " must have static collision.")
-    var collision := body.get_node_or_null("CollisionShape3D") as CollisionShape3D
+    var collision: CollisionShape3D
+    for child in body.get_children():
+        if child is CollisionShape3D:
+            collision = child as CollisionShape3D
+            break
     if collision == null:
         return _check(false, collider_name + " must contain a CollisionShape3D.")
     return _check(collision.shape != null and not collision.disabled, collider_name + " must contain an enabled collision shape.")

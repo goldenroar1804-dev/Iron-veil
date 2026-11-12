@@ -131,3 +131,7 @@ Validation additions — 2026-11-11
 - Restricted the supplied-model importer trigger to the ten uploaded archive-part files; changing the Blender conversion script alone can no longer start an import job without its required source archive.
 - Expanded the CQB map regression test to require an enabled CollisionShape3D on the ceiling, entry segments, return walls, all six concrete columns, partitions, outer shell and hard-cover props.
 - No gameplay or asset changes were made in this audit pass.
+
+
+2026-11-12 — Collision test node lookup correction
+- Adjusted the expanded collision audit to locate CollisionShape3D children by node type rather than relying on their automatically assigned names; the first CI run exposed this test-only assumption, not a missing in-game collider.
