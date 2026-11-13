@@ -1,5 +1,11 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-12
+Last updated: 2026-11-13
+
+2026-11-13 — CQB collision regression coverage expansion
+- Added an automatic audit for every generated structural and hard-cover PT_* mesh, while explicitly excluding decorative-only scuffs, graffiti, debris and wall skirting.
+- Added direct regression checks against the same player capsule query used by smooth locomotion: the south entry remains traversable and the outer wall blocks movement.
+- No gameplay, map geometry, branch, or APK changes were made.
+
 
 Quest OpenXR startup and Android packaging correction
 - Explicitly initialize the OpenXR interface before enabling XR rendering in the main viewport.

@@ -24,6 +24,26 @@ func _check_static_collider(map_root: Node3D, collider_name: String) -> bool:
         return _check(false, collider_name + " must contain a CollisionShape3D.")
     return _check(collision.shape != null and not collision.disabled, collider_name + " must contain an enabled collision shape.")
 
+func _check_generated_map_colliders(map_root: Node3D) -> bool:
+    # Every collidable map box is created as a PT_* MeshInstance3D with a
+    # sibling StaticBody3D named <mesh>_Collider. Explicitly exclude only the
+    # known decorative-only meshes so new cover/walls cannot silently ship
+    # without collision coverage.
+    var audited_count := 0
+    for child in map_root.get_children():
+        if not (child is MeshInstance3D):
+            continue
+        var mesh_node := child as MeshInstance3D
+        var mesh_name := mesh_node.name
+        if not mesh_name.begins_with("PT_"):
+            continue
+        if mesh_name.begins_with("PT_FloorScuff_") or mesh_name.begins_with("PT_Graffiti_") or mesh_name.begins_with("PT_Debris_") or mesh_name.ends_with("_DampSkirting"):
+            continue
+        if not _check_static_collider(map_root, mesh_name + "_Collider"):
+            return false
+        audited_count += 1
+    return _check(audited_count >= 30, "All generated CQB structural and hard-cover meshes must be collision-audited.")
+
 func _run() -> void:
     var packed := load("res://scenes/main.tscn") as PackedScene
     if not _check(packed != null, "Main scene must load."):
@@ -60,6 +80,14 @@ func _run() -> void:
     for collider_name in required_static_colliders:
         if not _check_static_collider(map_root, collider_name):
             return
+    if not _check_generated_map_colliders(map_root):
+        return
+    # Exercise the same capsule query used by smooth locomotion: the south
+    # entry should be traversable, while the outer wall must stop the player.
+    if not _check(not bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, -0.25))), "Player capsule should move through the clear south entry."):
+        return
+    if not _check(bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, 2.0))), "Player capsule must be blocked by the south outer wall."):
+        return
     var hud := game.get_node_or_null("XROrigin3D/XRCamera3D/TacticalStatusHUD") as Label3D
     if not _check(hud != null and hud.text.contains("AMMO"), "The in-headset tactical HUD must be present and show ammunition."):
         return
