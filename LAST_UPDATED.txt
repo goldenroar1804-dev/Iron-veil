@@ -1,6 +1,12 @@
 IRON VEIL repository update marker
 Last updated: 2026-11-13
 
+2026-11-13 — Weapon pickup stand no longer blocks player movement
+- Removed static collision from the decorative pickup stand top and legs. Their low geometry overlapped the standing player capsule at spawn, blocking the first smooth-locomotion step through the south entry.
+- Kept the stand visuals and rifle pickup interaction unchanged.
+- Added regression assertions that the stand remains non-colliding, the south entry is traversable, and the outer wall still blocks movement.
+
+
 2026-11-13 — CQB collision regression coverage expansion
 - Added an automatic audit for every generated structural and hard-cover PT_* mesh, while explicitly excluding decorative-only scuffs, graffiti, debris and wall skirting.
 - Added direct regression checks against the same player capsule query used by smooth locomotion: the south entry remains traversable and the outer wall blocks movement.

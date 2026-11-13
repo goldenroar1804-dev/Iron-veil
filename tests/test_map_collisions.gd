@@ -84,6 +84,8 @@ func _run() -> void:
         return
     # Exercise the same capsule query used by smooth locomotion: the south
     # entry should be traversable, while the outer wall must stop the player.
+    if not _check(game.get_node_or_null("WeaponPickupStand_Top_Collider") == null and game.get_node_or_null("WeaponPickupStand_LegA_Collider") == null and game.get_node_or_null("WeaponPickupStand_LegB_Collider") == null, "The decorative weapon pickup stand must not obstruct player locomotion."):
+        return
     if not _check(not bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, -0.25))), "Player capsule should move through the clear south entry."):
         return
     if not _check(bool(game.call("_player_space_blocked", Vector3(0.0, 0.0, 2.0))), "Player capsule must be blocked by the south outer wall."):

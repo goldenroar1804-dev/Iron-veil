@@ -319,9 +319,11 @@ func _build_rifle() -> void:
     forward.y = 0.0
     rifle.global_position = xr_camera.global_position + forward.normalized() * 0.72 + Vector3(0, -0.78, 0)
     rifle.global_rotation = xr_camera.global_rotation
-    _add_box("WeaponPickupStand_Top", Vector3(0.55, 0.06, 0.42), rifle.global_position + Vector3(0, -0.42, 0), Color(0.18, 0.19, 0.17))
-    _add_box("WeaponPickupStand_LegA", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(-0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
-    _add_box("WeaponPickupStand_LegB", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
+    # The display stand is visual-only: its low top and legs overlapped the
+    # standing player capsule at spawn and prevented the first movement step.
+    _add_visual_box("WeaponPickupStand_Top", Vector3(0.55, 0.06, 0.42), rifle.global_position + Vector3(0, -0.42, 0), Color(0.18, 0.19, 0.17))
+    _add_visual_box("WeaponPickupStand_LegA", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(-0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
+    _add_visual_box("WeaponPickupStand_LegB", Vector3(0.06, 0.42, 0.06), rifle.global_position + Vector3(0.20, -0.66, 0), Color(0.12, 0.13, 0.12))
 
     # Prefer a real imported GLB when one is installed; retain the Quest-friendly
     # procedural rifle as a fallback so the project remains runnable out of the box.
