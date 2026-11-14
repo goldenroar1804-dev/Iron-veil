@@ -3,7 +3,8 @@ Last updated: 2026-11-14
 
 2026-11-14 — Reject one-frame soldier clips and reduce Quest query churn
 - The latest headless runtime log showed the imported soldier's selected Mixamo clip was only 0.0667 seconds long; the prior is_playing() assertion therefore passed despite a bind-pose-like result.
-- Imported clips shorter than 0.25 seconds are now rejected. When no usable motion clip exists, the static imported instance is removed and the articulated procedural soldier is shown instead.
+- Imported clips shorter than 0.25 seconds are rejected. When no usable motion clip exists, the imported model is hidden and its processing disabled, and the articulated procedural soldier is shown instead.
+- The first validation run exposed a renderer null-material error when freeing the imported scene; keeping it hidden avoids that teardown path.
 - Cached the standing capsule shape and physics query parameters used by smooth locomotion instead of allocating both for every movement substep.
 - Added a short retry cooldown for blocked enemy shots so cover does not cause repeated chest-height raycasts every physics frame.
 - Added regression checks for the visible soldier fallback, cached player capsule dimensions, and blocked-shot throttling.

@@ -1111,8 +1111,11 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
         if has_imported_soldier and not _play_imported_soldier_animation(enemy):
             var imported_soldier := enemy.get_node_or_null("ImportedSoldierVisual")
             if imported_soldier != null:
-                enemy.remove_child(imported_soldier)
-                imported_soldier.queue_free()
+                # Keep the imported scene hidden rather than freeing its GLB
+                # surfaces at runtime; the headless renderer reports a null
+                # material during teardown for this asset.
+                imported_soldier.visible = false
+                imported_soldier.process_mode = Node.PROCESS_MODE_DISABLED
             humanoid.visible = true
             print("IRON VEIL: imported soldier had no usable motion; using articulated procedural fallback.")
         enemy.connect("player_attacked", Callable(self, "_on_enemy_attacked_player"))

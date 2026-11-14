@@ -131,7 +131,7 @@ func _run() -> void:
             return
         var humanoid := npc.get_node_or_null("HumanoidVisual") as Node3D
         var imported_soldier := npc.get_node_or_null("ImportedSoldierVisual") as Node3D
-        if imported_soldier != null:
+        if imported_soldier != null and imported_soldier.visible:
             if not _check(humanoid != null and not humanoid.visible, "A valid imported soldier animation should replace the procedural fallback."):
                 return
             var soldier_animation := imported_soldier.find_child("AnimationPlayer", true, false) as AnimationPlayer
@@ -141,6 +141,8 @@ func _run() -> void:
             if not _check(active_clip != null and active_clip.length >= 0.25, "Imported soldier playback must use a real multi-frame motion clip, not a one-frame bind-pose remnant."):
                 return
         else:
+            if imported_soldier != null and not _check(imported_soldier.process_mode == Node.PROCESS_MODE_DISABLED, "A hidden invalid imported soldier must not keep processing in the background."):
+                return
             if not _check(humanoid != null and humanoid.visible and humanoid.get_child_count() >= 18, "Each NPC must show the articulated animated fallback when no usable imported motion clip is available."):
                 return
     print("IRON VEIL: Paint Thinner-inspired CQB map collision audit passed.")
