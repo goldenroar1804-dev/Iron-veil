@@ -177,10 +177,13 @@ func _physics_process(delta: float) -> void:
 
 
 func _try_attack_player() -> void:
-    if target == null or not is_instance_valid(target):
+    if target == null or not is_instance_valid(target) or attack_cooldown > 0.0:
         return
     # A second, chest-height ray confirms the shot is not passing through
     # cover. The player camera is the endpoint and is not a physics body.
+    # Apply a short retry delay before the query so blocked shots do not
+    # repeat a raycast every physics frame while the player remains in cover.
+    attack_cooldown = randf_range(0.35, 0.55)
     var origin := global_position + Vector3.UP * 1.28
     var query := PhysicsRayQueryParameters3D.create(origin, target.global_position)
     query.exclude = [get_rid()]

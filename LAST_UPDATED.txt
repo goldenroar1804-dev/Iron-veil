@@ -1,5 +1,12 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-13
+Last updated: 2026-11-14
+
+2026-11-14 — Reject one-frame soldier clips and reduce Quest query churn
+- The latest headless runtime log showed the imported soldier's selected Mixamo clip was only 0.0667 seconds long; the prior is_playing() assertion therefore passed despite a bind-pose-like result.
+- Imported clips shorter than 0.25 seconds are now rejected. When no usable motion clip exists, the static imported instance is removed and the articulated procedural soldier is shown instead.
+- Cached the standing capsule shape and physics query parameters used by smooth locomotion instead of allocating both for every movement substep.
+- Added a short retry cooldown for blocked enemy shots so cover does not cause repeated chest-height raycasts every physics frame.
+- Added regression checks for the visible soldier fallback, cached player capsule dimensions, and blocked-shot throttling.
 
 2026-11-13 — Weapon pickup stand no longer blocks player movement
 - Removed static collision from the decorative pickup stand top and legs. Their low geometry overlapped the standing player capsule at spawn, blocking the first smooth-locomotion step through the south entry.

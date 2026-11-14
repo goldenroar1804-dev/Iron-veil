@@ -53,10 +53,13 @@ var player_health := 100
 var player_spawn_position := Vector3(0.0, 0.0, 9.5)
 var player_invulnerable_timer := 0.0
 var player_respawn_timer := 0.0
+var player_space_shape: CapsuleShape3D
+var player_space_query: PhysicsShapeQueryParameters3D
 
 func _ready() -> void:
     add_to_group("iron_veil_game")
     _start_openxr()
+    _setup_player_space_query()
     _setup_visual_quality()
     var paint_thinner_map := preload("res://scripts/paint_thinner_map.gd").new()
     add_child(paint_thinner_map)
@@ -130,20 +133,27 @@ func _update_smooth_movement(delta: float) -> void:
         if not _player_space_blocked(slide_z):
             xr_origin.global_position += slide_z
 
+func _setup_player_space_query() -> void:
+    # Reuse the same capsule/query for every movement substep. Allocating both
+    # resources repeatedly during thumbstick movement creates avoidable Quest
+    # frame-time and memory-management overhead.
+    player_space_shape = CapsuleShape3D.new()
+    player_space_shape.radius = 0.28
+    player_space_shape.height = 1.55
+    player_space_query = PhysicsShapeQueryParameters3D.new()
+    player_space_query.shape = player_space_shape
+    player_space_query.collision_mask = 1
+    player_space_query.collide_with_bodies = true
+    player_space_query.collide_with_areas = false
+    player_space_query.margin = 0.02
+
 func _player_space_blocked(displacement: Vector3) -> bool:
     if displacement.length_squared() < 0.000001:
         return false
-    var capsule := CapsuleShape3D.new()
-    capsule.radius = 0.28
-    capsule.height = 1.55
-    var query := PhysicsShapeQueryParameters3D.new()
-    query.shape = capsule
-    query.transform = Transform3D(Basis.IDENTITY, xr_origin.global_position + Vector3(0.0, 0.95, 0.0) + displacement)
-    query.collision_mask = 1
-    query.collide_with_bodies = true
-    query.collide_with_areas = false
-    query.margin = 0.02
-    var hits := get_world_3d().direct_space_state.intersect_shape(query, 8)
+    if player_space_query == null:
+        _setup_player_space_query()
+    player_space_query.transform = Transform3D(Basis.IDENTITY, xr_origin.global_position + Vector3(0.0, 0.95, 0.0) + displacement)
+    var hits := get_world_3d().direct_space_state.intersect_shape(player_space_query, 8)
     return not hits.is_empty()
 
 func _update_smooth_turn(delta: float) -> void:
@@ -684,11 +694,11 @@ func _try_add_imported_model(parent: Node3D, path: String, instance_name: String
 
 
 
-func _play_imported_soldier_animation(model_root: Node) -> void:
+func _play_imported_soldier_animation(model_root: Node) -> bool:
     var animation_player := model_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
     if animation_player == null:
-        push_warning("IRON VEIL: imported soldier has no AnimationPlayer; using its bind pose.")
-        return
+        push_warning("IRON VEIL: imported soldier has no AnimationPlayer; using the animated procedural fallback.")
+        return false
     var chosen_animation := ""
     var longest_duration := 0.0
     for animation_name in animation_player.get_animation_list():
@@ -696,20 +706,21 @@ func _play_imported_soldier_animation(model_root: Node) -> void:
         if normalized_name.contains("t-pose") or normalized_name.contains("bind"):
             continue
         var clip := animation_player.get_animation(animation_name)
-        if clip == null or clip.get_track_count() == 0:
+        if clip == null or clip.get_track_count() == 0 or clip.length < 0.25:
             continue
-        # Prefer the longest authored motion clip over a short reference/rest
-        # clip, while excluding the explicit T-pose animation.
+        # Reject one-frame import remnants: they report is_playing() but leave
+        # the soldier visually stuck in its bind pose.
         if clip.length > longest_duration:
             longest_duration = clip.length
             chosen_animation = animation_name
     if chosen_animation.is_empty():
-        push_warning("IRON VEIL: imported soldier has no usable motion clip.")
-        return
+        push_warning("IRON VEIL: imported soldier has no usable motion clip (minimum 0.25s); using the animated procedural fallback.")
+        return false
     var chosen_clip := animation_player.get_animation(chosen_animation)
     chosen_clip.loop_mode = Animation.LOOP_LINEAR
     animation_player.play(chosen_animation)
     print("IRON VEIL: playing soldier animation ", chosen_animation, " (", longest_duration, "s)")
+    return true
 
 func _enhance_imported_materials(root: Node) -> void:
     # Preserve each asset's authored albedo/normal/metallic textures, while
@@ -1097,8 +1108,13 @@ func _spawn_tactical_enemies(map_scale: float = 1.0) -> void:
         # imported animation playback. AnimationPlayer does not reliably advance
         # a skinned GLB while its owner is still outside the scene tree.
         add_child(enemy)
-        if has_imported_soldier:
-            _play_imported_soldier_animation(enemy)
+        if has_imported_soldier and not _play_imported_soldier_animation(enemy):
+            var imported_soldier := enemy.get_node_or_null("ImportedSoldierVisual")
+            if imported_soldier != null:
+                enemy.remove_child(imported_soldier)
+                imported_soldier.queue_free()
+            humanoid.visible = true
+            print("IRON VEIL: imported soldier had no usable motion; using articulated procedural fallback.")
         enemy.connect("player_attacked", Callable(self, "_on_enemy_attacked_player"))
         if mission_director != null:
             mission_director.call("register_enemy", enemy)

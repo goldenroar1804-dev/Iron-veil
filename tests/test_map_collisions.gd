@@ -57,6 +57,12 @@ func _run() -> void:
         return
     if not _check(is_equal_approx(map_root.scale.x, 0.68) and is_equal_approx(map_root.scale.z, 0.68), "CQB footprint must be reduced to 68 percent horizontally."):
         return
+    var player_query := game.get("player_space_query") as PhysicsShapeQueryParameters3D
+    if not _check(player_query != null and player_query.shape is CapsuleShape3D, "Smooth locomotion must reuse a cached standing-capsule physics query."):
+        return
+    var player_shape := player_query.shape as CapsuleShape3D
+    if not _check(is_equal_approx(player_shape.radius, 0.28) and is_equal_approx(player_shape.height, 1.55), "Cached player collision capsule dimensions must remain unchanged."):
+        return
     # Audit every fixed structural and hard-cover collider, not just the outer
     # shell and the first row of partitions. Decorative scuffs, graffiti and
     # loose debris intentionally remain non-colliding.
@@ -125,14 +131,17 @@ func _run() -> void:
             return
         var humanoid := npc.get_node_or_null("HumanoidVisual") as Node3D
         var imported_soldier := npc.get_node_or_null("ImportedSoldierVisual") as Node3D
-        if ResourceLoader.exists("res://assets/models/characters/military_soldier.glb"):
-            if not _check(imported_soldier != null and humanoid != null and not humanoid.visible, "Installed soldier asset must replace the procedural NPC visual."):
+        if imported_soldier != null:
+            if not _check(humanoid != null and not humanoid.visible, "A valid imported soldier animation should replace the procedural fallback."):
                 return
             var soldier_animation := imported_soldier.find_child("AnimationPlayer", true, false) as AnimationPlayer
             if not _check(soldier_animation != null and soldier_animation.is_playing(), "Imported soldier must start a motion clip after entering the scene tree."):
                 return
+            var active_clip := soldier_animation.get_animation(soldier_animation.current_animation)
+            if not _check(active_clip != null and active_clip.length >= 0.25, "Imported soldier playback must use a real multi-frame motion clip, not a one-frame bind-pose remnant."):
+                return
         else:
-            if not _check(humanoid != null and humanoid.get_child_count() >= 18, "Each NPC must retain the multipart humanoid fallback when the soldier asset is absent."):
+            if not _check(humanoid != null and humanoid.visible and humanoid.get_child_count() >= 18, "Each NPC must show the articulated animated fallback when no usable imported motion clip is available."):
                 return
     print("IRON VEIL: Paint Thinner-inspired CQB map collision audit passed.")
     quit(0)

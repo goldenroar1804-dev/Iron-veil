@@ -59,10 +59,26 @@ func _run() -> void:
     if not _check(int(enemy.get("state")) == 1, "Enemy should investigate its last known position after losing line of sight."):
         return
 
+    var blocked_attack_events := [0]
+    enemy.connect("player_attacked", func(_damage: int) -> void:
+        blocked_attack_events[0] += 1
+    )
+    enemy.set("attack_cooldown", 0.0)
+    enemy.call("_try_attack_player")
+    if not _check(blocked_attack_events[0] == 0, "An enemy must not attack through a blocking wall."):
+        return
+    var blocked_retry_delay := float(enemy.get("attack_cooldown"))
+    if not _check(blocked_retry_delay > 0.0 and blocked_retry_delay <= 0.55, "Blocked enemy shots must set a short retry cooldown."):
+        return
+    enemy.call("_try_attack_player")
+    if not _check(blocked_attack_events[0] == 0, "A blocked enemy shot must not repeat a raycast attempt before its retry cooldown expires."):
+        return
+
     wall.queue_free()
     await physics_frame
     await physics_frame
 
+    enemy.set("attack_cooldown", 0.0)
     var attack_events := [0]
     var attack_damage := [0]
     enemy.connect("player_attacked", func(damage: int) -> void:
