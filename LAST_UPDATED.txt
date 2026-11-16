@@ -1,5 +1,5 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-14
+Last updated: 2026-11-16
 
 2026-11-14 — Reject one-frame soldier clips and reduce Quest query churn
 - The latest headless runtime log showed the imported soldier's selected Mixamo clip was only 0.0667 seconds long; the prior is_playing() assertion therefore passed despite a bind-pose-like result.
@@ -155,3 +155,9 @@ Validation additions — 2026-11-11
 
 2026-11-12 — Collision test node lookup correction
 - Adjusted the expanded collision audit to locate CollisionShape3D children by node type rather than relying on their automatically assigned names; the first CI run exposed this test-only assumption, not a missing in-game collider.
+
+
+2026-11-16 — Enable pull-request validation on the core rebuild branch
+- Added feature/iron-veil-core-rebuild to the Godot checks workflow pull_request base-branch filter. Push validation already covered this branch, but pull requests targeting it were silently excluded from CI.
+- Reviewed current gameplay, AI, CQB collision tests, project settings, Android export workflow and latest successful Actions logs. No new confirmed gameplay or parse/runtime regression was found; the imported soldier still correctly falls back because its available clips are too short.
+- Physical Quest OpenXR startup, controller interaction feel and frame-rate profiling remain unverified by headless CI.
