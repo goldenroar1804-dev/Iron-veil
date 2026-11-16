@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Download Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Godot 4.6
         uses: chickensoft-games/setup-godot@v2

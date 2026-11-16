@@ -161,3 +161,7 @@ Validation additions — 2026-11-11
 - Added feature/iron-veil-core-rebuild to the Godot checks workflow pull_request base-branch filter. Push validation already covered this branch, but pull requests targeting it were silently excluded from CI.
 - Reviewed current gameplay, AI, CQB collision tests, project settings, Android export workflow and latest successful Actions logs. No new confirmed gameplay or parse/runtime regression was found; the imported soldier still correctly falls back because its available clips are too short.
 - Physical Quest OpenXR startup, controller interaction feel and frame-rate profiling remain unverified by headless CI.
+
+2026-11-16 — Update GitHub checkout actions to Node 24
+- Replaced actions/checkout@v4 with actions/checkout@v7 across the repository workflows after current CI logs reported the v4 Node 20 runtime was deprecated and forcibly running under Node 24.
+- The v7 action declares node24 directly, removing that compatibility warning without changing checkout refs, build steps or artifact behavior.
