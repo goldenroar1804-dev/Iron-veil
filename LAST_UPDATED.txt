@@ -1,5 +1,5 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-16
+Last updated: 2026-11-18
 
 2026-11-14 — Reject one-frame soldier clips and reduce Quest query churn
 - The latest headless runtime log showed the imported soldier's selected Mixamo clip was only 0.0667 seconds long; the prior is_playing() assertion therefore passed despite a bind-pose-like result.
