@@ -22,6 +22,8 @@ func _check_static_collider(map_root: Node3D, collider_name: String) -> bool:
             break
     if collision == null:
         return _check(false, collider_name + " must contain a CollisionShape3D.")
+    if not _check((body.collision_layer & 1) != 0, collider_name + " must be on collision layer 1 so the player movement query can detect it."):
+        return false
     return _check(collision.shape != null and not collision.disabled, collider_name + " must contain an enabled collision shape.")
 
 func _check_generated_map_colliders(map_root: Node3D) -> bool:
