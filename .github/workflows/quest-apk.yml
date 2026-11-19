@@ -16,13 +16,13 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
 
@@ -74,7 +74,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump xmltree build/iron_veil_quest.apk AndroidManifest.xml | grep -q "org.khronos.openxr.intent.category.IMMERSIVE_HMD"
 
       - name: Upload Quest APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Iron-Veil-Quest-APK
           path: build/iron_veil_quest.apk
