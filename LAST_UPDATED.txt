@@ -170,3 +170,8 @@ Validation additions — 2026-11-11
 2026-11-18 — Verify CQB collider layers in movement regression tests
 - Extended the static-collider audit to require collision layer 1 on every checked map collider, matching the cached player capsule query mask. This catches walls or hard cover that have a shape but would otherwise be invisible to smooth-locomotion collision checks.
 - Added no gameplay changes; validation is running through the existing Godot CI workflow.
+
+2026-11-19 — Migrate Quest APK workflow actions to Node 24
+- Updated actions/setup-java from v4 to v5, android-actions/setup-android from v3 to v4, and actions/upload-artifact from v4 to v6 after the latest Quest export logs showed all three still running on the deprecated Node 20 runtime.
+- Verified the replacement action metadata declares Node 24. The Android SDK package input and Java 17 configuration remain unchanged.
+- Workflow-only maintenance; no gameplay, project, or APK contents were changed by this commit. A fresh Quest export is triggered for validation.
