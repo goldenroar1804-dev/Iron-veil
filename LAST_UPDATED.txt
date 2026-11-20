@@ -1,5 +1,5 @@
 IRON VEIL repository update marker
-Last updated: 2026-11-18
+Last updated: 2026-11-20
 
 2026-11-14 — Reject one-frame soldier clips and reduce Quest query churn
 - The latest headless runtime log showed the imported soldier's selected Mixamo clip was only 0.0667 seconds long; the prior is_playing() assertion therefore passed despite a bind-pose-like result.
@@ -175,3 +175,8 @@ Validation additions — 2026-11-11
 - Updated actions/setup-java from v4 to v5, android-actions/setup-android from v3 to v4, and actions/upload-artifact from v4 to v6 after the latest Quest export logs showed all three still running on the deprecated Node 20 runtime.
 - Verified the replacement action metadata declares Node 24. The Android SDK package input and Java 17 configuration remain unchanged.
 - Workflow-only maintenance; no gameplay, project, or APK contents were changed by this commit. A fresh Quest export is triggered for validation.
+
+
+2026-11-20 — Add application icon for Quest export
+- Added a compact Iron Veil SVG application icon and configured project.godot to use it. The previous Quest export log explicitly reported that no application icon was specified; this addresses that confirmed packaging diagnostic without changing gameplay.
+- Godot import and a fresh Quest export are required to validate the icon on the Android package. No headset test is claimed.
